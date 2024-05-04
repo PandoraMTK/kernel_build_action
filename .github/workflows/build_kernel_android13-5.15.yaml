@@ -1,0 +1,152 @@
+name: Build Kernel android13-5.15
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        required: true
+        type: string
+        description: Version
+      BUILD_TYPE:
+        required: true
+        type: choice
+        default: DEBUG
+        description: Build Type
+        options:
+          - DEBUG
+          - BETA
+          - REL
+      KernelSU:
+        required: false
+        default: false
+        type: boolean
+      FullLTO:
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  build-kernel:
+    name: Build Kernel
+    runs-on: ubuntu-24.04
+    env:
+      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -v"
+      CCACHE_NOHASHDIR: "true"
+    steps:
+      - name: Clean Build Space
+        uses: easimon/maximize-build-space@v10
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 2048
+          swap-size-mb: 61440
+          remove-dotnet: 'true'
+          remove-android: 'true'
+          remove-haskell: 'true'
+          remove-codeql: 'true'
+          remove-docker-images: 'true'
+
+      - name: Optimize Memory Management
+        run: |
+          sudo -E sysctl vm.swappiness=200
+          sudo -E sysctl vm.min_free_kbytes=32768
+          sudo -E sysctl vm.watermark_scale_factor=100
+          sudo -E sysctl vm.overcommit_memory=1
+          echo "Y" | sudo -E tee /sys/kernel/mm/lru_gen/enabled
+          echo "1000" | sudo -E tee /sys/kernel/mm/lru_gen/min_ttl_ms
+          echo "1" | sudo -E tee /sys/kernel/mm/swap/vma_ra_enabled
+
+      - name: Setup TimeZone
+        run: |
+          sudo -E rm -rf /etc/localtime
+          sudo -E ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+
+      - name: Install Toolchain
+        run: |
+          export DEBIAN_FRONTEND=noninteractive
+          sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php
+          sudo -E apt-get update
+          sudo -E apt-get install --no-install-recommends -y \
+            ccache binutils binutils-aarch64-linux-gnu binutils-arm-linux-gnueabi \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi pahole \
+            git automake flex bison build-essential zlib1g-dev make libelf-dev \
+            libssl-dev openssl bc device-tree-compiler python3 python3-pip \
+            python3-telethon 7zip 7zip-standalone gzip lz4 fakeroot build-essential \
+            kexec-tools kernel-wedge libncurses-dev asciidoc dos2unix
+          sudo -E apt-get clean
+          df -h
+
+      - name: Checkout Code
+        uses: actions/checkout@v4.1.4
+        with:
+          fetch-depth: 1
+
+      - name: Checkout Kernel Code
+        uses: actions/checkout@v4.1.4
+        with:
+          token: ${{ secrets.CI_TOKEN }}
+          repository: PandoraMTK/android_kernel_gki_5.15
+          path: kernel_common
+          fetch-depth: 1
+
+      - name: Download Pandora Clang
+        uses: robinraju/release-downloader@v1.10
+        with:
+          repository: 'PandoraMTK/pandora-clang'
+          latest: true
+          fileName: 'pandora-clang.tar.gz'
+          out-file-path: ''
+          extract: true
+          tarBall: false
+          zipBall: false
+          token: ${{ secrets.CI_TOKEN }}
+
+      - name: Setup CCACHE key
+        id: setup_ccache_key
+        run: |
+          CCACHE_KEY="gki_build-android13-5.15"
+          
+          if [ "${{inputs.FullLTO}}" != true ]; then
+            CCACHE_KEY="$CCACHE_KEY-ThinLTO"
+          fi
+
+          echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
+
+      - name: Setup ccache
+        uses: hendrikmuhs/ccache-action@v1.2.13
+        with:
+          key: ${{steps.setup_ccache_key.outputs.ccache_key_id}}
+          max-size: 3G
+          save: true
+          append-timestamp: true
+
+      - name: Start Build
+        id: kbuild
+        run: |
+          set -euo pipefail
+          CLANG_PATH="$GITHUB_WORKSPACE/pandora-clang-18/bin"
+          BUILD_NUMBER="${{github.run_id}}"
+          KSU="${{inputs.KernelSU}}"
+          FULL_LTO="${{inputs.FullLTO}}"
+
+          cd kernel_common
+          bash $GITHUB_WORKSPACE/build_kernel.sh \
+            "$CLANG_PATH" "Yuni" "${{inputs.VERSION}}" "${{inputs.BUILD_TYPE}}" \
+            "$BUILD_NUMBER" "$KSU" "$FULL_LTO"
+          
+          ZIPNAME="$(cat .output)"
+          mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
+          echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
+
+      - name: Bot session cache
+        id: bot_session_cache
+        uses: actions/cache@v4
+        with:
+          path: tgbot.session
+          key: ${{ runner.os }}-bot-session
+
+      - name: Upload to telegram
+        env:
+          CHAT_ID: ${{ secrets.CHAT_ID }}
+          BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
+        run: |
+          python3 $GITHUB_WORKSPACE/tgbot.py $GITHUB_WORKSPACE/${{ steps.kbuild.outputs.archivename }}.zip
