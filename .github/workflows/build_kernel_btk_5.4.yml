@@ -1,0 +1,31 @@
+name: Build BTK Kernel
+
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        required: true
+        type: string
+        description: Version
+      BRANCH:
+        required: false
+        type: string
+        description: branch
+        default: miui-u
+
+jobs:
+  build-kernel:
+    name: Build Kernel
+    strategy:
+      matrix:
+        include:
+          - device: odin
+          - device: haydn
+          - device: venus
+          - device: star
+    uses: ./.github/workflows/build_kernel_btk_5.4_common.yml
+    secrets: inherit
+    with:
+      VERSION: ${{ inputs.VERSION }}
+      DEVICE: ${{ matrix.device}}
+      BRANCH: ${{inputs.BRANCH}}
