@@ -19,11 +19,11 @@ BUILD_TYPE="$4"
 # Build Number
 BUILD_NUMBER="$5"
 
-# Support KernelSU
-# KSU="$6"
-
 # Use Full LTO
-FULL_LTO="$7"
+FULL_LTO="$6"
+
+# OKI
+OKI="$7"
 
 grep_prop() {
     local REGEX="s/^$1=//p"
@@ -69,9 +69,8 @@ export PATH="$CLANG_PATH:$PATH"
 export CCACHE="ccache"
 export CC="$CLANG_PATH/clang"
 export CXX="$CLANG_PATH/clang++"
-export CLANG_TRIPLE="aarch64-linux-gnu"
-export CROSS_COMPILE_COMPAT="arm-linux-gnueabi-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
+export CROSS_COMPILE_COMPAT="arm-linux-gnueabihf-"
 export ARCH="arm64"
 export SUBARCH="$ARCH"
 export KBUILD_BUILD_USER="GHCI"
@@ -81,7 +80,7 @@ MODULE_VER=""
 MODULE_VERCODE=""
 
 # Resources
-THREADS="$(($(nproc --all) - 1))"
+THREADS="$(nproc --all)"
 TIME="$(date +"%H%M%S")"
 WEEK="$(date +"%gw%V")"
 DAY="$(printf "\x$(printf %x $((96 + $(date +"%u"))))")"
@@ -91,6 +90,11 @@ KERNEL_DIR="$(pwd)"
 INSTALL_MOD_PATH="$KERNEL_DIR/magisk/kernel_modules"
 OUT_DIR="$KERNEL_DIR/../build_dir"
 MOD_DIR="$KERNEL_DIR/../out_dir"
+
+if [ "$OKI" = "true" ]; then
+    OUT_DIR="$KERNEL_DIR/../build_oki_dir"
+    MOD_DIR="$KERNEL_DIR/../out_oki_dir"
+fi
 
 # Kernel Branch and KMI Generation
 get_kernel_version() {
@@ -156,7 +160,7 @@ echo "Making Kernel:"
 echo "-------------------"
 echo
 rm -rf "$MOD_DIR"
-make CC="$CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
 if $FULL_LTO; then
     echo "-------------------"
     echo "Enabling FullLTO"
@@ -173,7 +177,7 @@ else
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e LTO_CLANG_Thin
 fi
 make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" -j"$THREADS" Image modules 2>&1
-make CC="$CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"

@@ -1,5 +1,4 @@
 name: Build BTK Kernel
-
 on:
   workflow_dispatch:
     inputs:
@@ -12,11 +11,11 @@ on:
         type: string
         description: branch
         default: miui-u
-
 jobs:
   build-kernel:
     name: Build Kernel
     strategy:
+      fail-fast: false
       matrix:
         include:
           - device: odin

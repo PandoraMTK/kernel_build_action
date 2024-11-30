@@ -1,5 +1,4 @@
 name: BTK Kernel Build
-
 on:
   workflow_call:
     inputs:
@@ -15,7 +14,10 @@ on:
         required: true
         type: string
         description: branch
-
+      DEBUG:
+        required: false
+        default: false
+        type: boolean
 jobs:
   build-kernel:
     name: Build Kernel
@@ -29,26 +31,24 @@ jobs:
         with:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
-          swap-size-mb: 61440
+          swap-size-mb: 16384
           remove-dotnet: 'true'
           remove-android: 'true'
           remove-haskell: 'true'
           remove-codeql: 'true'
           remove-docker-images: 'true'
-
       - name: Install Toolchain
         run: |
           export DEBIAN_FRONTEND=noninteractive
           sudo rm -rf /usr/share/dotnet /etc/mysql /etc/php
           sudo -E apt-get update
           sudo -E apt-get install --no-install-recommends -y linux-modules-extra-"$(uname -r)" \
-            ccache binutils pahole git automake flex bison build-essential zlib1g-dev make \
+            ccache pahole git automake flex bison build-essential zlib1g-dev make \
             libelf-dev libssl-dev openssl bc device-tree-compiler python3 python3-pip \
             python3-telethon 7zip 7zip-standalone gzip lz4 fakeroot build-essential \
             kexec-tools kernel-wedge libncurses-dev asciidoc dos2unix zstd
           sudo -E apt-get clean
           df -h
-
       - name: Optimize Memory Management
         run: |
           sudo -E sysctl vm.swappiness=200
@@ -65,18 +65,15 @@ jobs:
           echo "Y" | sudo -E tee /sys/kernel/mm/lru_gen/enabled
           echo "1000" | sudo -E tee /sys/kernel/mm/lru_gen/min_ttl_ms
           echo "1" | sudo -E tee /sys/kernel/mm/swap/vma_ra_enabled
-
       - name: Setup TimeZone
         run: |
           sudo -E rm -rf /etc/localtime
           sudo -E ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-
       - name: Checkout Code
         uses: actions/checkout@main
         with:
           ref: ${{github.ref_name}}
           fetch-depth: 1
-
       - name: Checkout Kernel Code
         uses: actions/checkout@main
         with:
@@ -85,7 +82,6 @@ jobs:
           path: kernel_common
           ref: ${{inputs.BRANCH}}
           fetch-depth: 1
-
       - name: Download Pandora Clang
         uses: robinraju/release-downloader@main
         with:
@@ -97,14 +93,12 @@ jobs:
           tarBall: false
           zipBall: false
           token: ${{ secrets.CI_TOKEN }}
-
       - name: Setup CCACHE key
         id: setup_ccache_key
         run: |
           CCACHE_KEY="gki_build-btk_5.4-${{inputs.DEVICE}}"
 
           echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
-
       - name: Setup ccache
         uses: hendrikmuhs/ccache-action@main
         with:
@@ -112,7 +106,12 @@ jobs:
           max-size: 3G
           save: true
           append-timestamp: true
-
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
+        if: ${{inputs.DEBUG}}
+        with:
+          ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+          limit-access-to-actor: true
       - name: Start Build
         id: kbuild
         run: |
@@ -121,18 +120,16 @@ jobs:
           cd kernel_common
           bash $GITHUB_WORKSPACE/build_kernel_old.sh \
             "$GITHUB_WORKSPACE/pandora-clang-18/bin" "${{inputs.VERSION}}" "${{inputs.DEVICE}}"
-          
+
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
           echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
-
       - name: Bot session cache
         id: bot_session_cache
         uses: actions/cache@v4
         with:
           path: tgbot.session
           key: ${{ runner.os }}-bot-session
-
       - name: Upload to telegram
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}

@@ -25,7 +25,7 @@ export CCACHE="ccache"
 export CC="$CLANG_PATH/clang"
 export CXX="$CLANG_PATH/clang++"
 export CLANG_TRIPLE="aarch64-linux-gnu"
-export CROSS_COMPILE_COMPAT="arm-linux-gnueabi-"
+export CROSS_COMPILE_COMPAT="arm-linux-gnueabihf-"
 export CROSS_COMPILE="aarch64-linux-gnu-"
 export ARCH="arm64"
 export SUBARCH="$ARCH"
@@ -37,7 +37,7 @@ export KMI_GENERATION
 export LOCALVERSION
 
 # Resources
-THREADS="$(($(nproc --all) - 1))"
+THREADS="$(nproc --all)"
 
 # Paths
 KERNEL_DIR="$(pwd)"
@@ -57,7 +57,7 @@ echo "-------------------"
 echo "Making Kernel:"
 echo "-------------------"
 echo
-make CC="$CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH "$DEFCONFIG" -j"$THREADS"
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH "$DEFCONFIG" -j"$THREADS"
 make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH -j"$THREADS" Image Image.gz
 
 DATE_END="$(date +"%s")"

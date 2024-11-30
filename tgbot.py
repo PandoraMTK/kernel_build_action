@@ -34,13 +34,16 @@ async def main():
     session_dir = os.path.join(script_dir, "tgbot.session")
     async with await TelegramClient(session=session_dir, api_id=API_ID, api_hash=API_HASH).start(bot_token=BOT_TOKEN) as bot:
         print("[+] Sending")
-        await bot.send_file(entity=CHAT_ID, file=files, parse_mode=None)
+        await bot.send_file(entity=CHAT_ID, file=files, parse_mode=None, silent=True)
         print("[+] Done!")
+        exit(0)
+    exit(0)
 
 if __name__ == "__main__":
     try:
         asyncio.set_event_loop(asyncio.new_event_loop())
         asyncio.get_event_loop().run_until_complete(main())
+        exit(0)
     except Exception as e:
         print(f"[-] An error occurred: {e}")
         exit(1)

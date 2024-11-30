@@ -1,5 +1,4 @@
-name: Build GKI Kernel 5.10, 5,15 and 6.1
-
+name: Build GKI Kernel 5.10, 5.15 and 6.1
 on:
   workflow_dispatch:
     inputs:
@@ -18,11 +17,15 @@ on:
         required: false
         default: false
         type: boolean
-
+      DEBUG:
+        required: false
+        default: false
+        type: boolean
 jobs:
   build-kernel:
     name: Build Kernel
     strategy:
+      fail-fast: false
       matrix:
         include:
           - KERNEL_NAME: Pandora
@@ -40,7 +43,6 @@ jobs:
             KERNEL_BRANCH: android14-6.1
             VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: 19.1.5-20241130
-
     uses: ./.github/workflows/build_kernel_gki_common.yml
     secrets: inherit
     with:
@@ -50,4 +52,6 @@ jobs:
       VERSION: ${{ matrix.VERSION }}
       BUILD_TYPE: ${{inputs.BUILD_TYPE}}
       FullLTO: ${{inputs.FullLTO}}
+      DEBUG: ${{inputs.DEBUG}}
       COMPILER_VER: ${{matrix.COMPILER_VER}}
+      OKI: false

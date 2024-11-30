@@ -1,4 +1,4 @@
-name: Build GKI Kernel 6.6
+name: Build OKI Kernel 5.10, 5.15 and 6.1
 on:
   workflow_dispatch:
     inputs:
@@ -28,11 +28,21 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - KERNEL_NAME: Haruhi
-            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
-            KERNEL_BRANCH: android15-6.6
+          - KERNEL_NAME: OanPora
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
+            KERNEL_BRANCH: android12-5.10-o
             VERSION: ${{ inputs.VERSION }}
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: r416183b
+          - KERNEL_NAME: OuPi
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
+            KERNEL_BRANCH: android13-5.15-o
+            VERSION: ${{ inputs.VERSION }}
+            COMPILER_VER: r450784e
+          - KERNEL_NAME: OngelPeats
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
+            KERNEL_BRANCH: android14-6.1-o
+            VERSION: ${{ inputs.VERSION }}
+            COMPILER_VER: r484474c
     uses: ./.github/workflows/build_kernel_gki_common.yml
     secrets: inherit
     with:
@@ -44,3 +54,4 @@ jobs:
       FullLTO: ${{inputs.FullLTO}}
       DEBUG: ${{inputs.DEBUG}}
       COMPILER_VER: ${{matrix.COMPILER_VER}}
+      OKI: true
