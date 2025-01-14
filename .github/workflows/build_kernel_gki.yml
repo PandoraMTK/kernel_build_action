@@ -1,4 +1,5 @@
-name: Build GKI Kernel 5.10, 5.15 and 6.1
+name: Build GKI Kernels
+run-name: Build GKI Kernels
 on:
   workflow_dispatch:
     inputs:
@@ -13,6 +14,26 @@ on:
         options:
           - BETA
           - REL
+      BUILD_5_10:
+        required: false
+        type: boolean
+        default: true
+        description: Build 5.10
+      BUILD_5_15:
+        required: false
+        type: boolean
+        default: true
+        description: Build 5.15
+      BUILD_6_1:
+        required: false
+        type: boolean
+        default: true
+        description: Build 6.1
+      BUILD_6_6:
+        required: false
+        type: boolean
+        default: true
+        description: Build 6.6
       FullLTO:
         required: false
         default: false
@@ -22,31 +43,41 @@ on:
         default: false
         type: boolean
 jobs:
-  build-kernel:
+  init-build:
     name: Build Kernel
     strategy:
       fail-fast: false
       matrix:
         include:
           - KERNEL_NAME: Pandora
+            IF: ${{inputs.BUILD_5_10}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
             KERNEL_BRANCH: android12-5.10
             VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: 19.1.5-20241130
           - KERNEL_NAME: Yuni
+            IF: ${{inputs.BUILD_5_15}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15
             VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: 19.1.5-20241130
           - KERNEL_NAME: AngelBeats
+            IF: ${{inputs.BUILD_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1
             VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: 19.1.5-20241130
-    uses: ./.github/workflows/build_kernel_gki_common.yml
+          - KERNEL_NAME: Haruhi
+            IF: ${{inputs.BUILD_6_6}}
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
+            KERNEL_BRANCH: android15-6.6
+            VERSION: ${{ inputs.VERSION }}
+            COMPILER_VER: 19.1.5-20241130
+    uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     with:
       KERNEL_NAME: ${{matrix.KERNEL_NAME}}
+      NOSKIP: ${{matrix.IF}}
       KERNEL_REPO: ${{matrix.KERNEL_REPO}}
       KERNEL_BRANCH: ${{matrix.KERNEL_BRANCH}}
       VERSION: ${{ matrix.VERSION }}

@@ -1,4 +1,5 @@
 name: BTK Kernel Build
+run-name: Build BTK Kernel ${{inputs.DEVICE}}
 on:
   workflow_call:
     inputs:
@@ -20,7 +21,7 @@ on:
         type: boolean
 jobs:
   build-kernel:
-    name: Build Kernel
+    name: Build Kernel ${{inputs.DEVICE}}
     runs-on: ubuntu-24.04
     env:
       CCACHE_NOHASHDIR: "true"
@@ -32,11 +33,11 @@ jobs:
           root-reserve-mb: 8192
           temp-reserve-mb: 2048
           swap-size-mb: 16384
-          remove-dotnet: 'true'
-          remove-android: 'true'
-          remove-haskell: 'true'
-          remove-codeql: 'true'
-          remove-docker-images: 'true'
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
       - name: Install Toolchain
         run: |
           export DEBIAN_FRONTEND=noninteractive
@@ -85,10 +86,9 @@ jobs:
       - name: Download Pandora Clang
         uses: robinraju/release-downloader@main
         with:
-          repository: 'PandoraMTK/pandora-clang'
+          repository: PandoraMTK/pandora-clang
           latest: true
-          fileName: 'pandora-clang.tar.gz'
-          out-file-path: ''
+          fileName: pandora-clang.tar.gz
           extract: true
           tarBall: false
           zipBall: false
