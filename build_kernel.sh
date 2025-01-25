@@ -3,7 +3,7 @@
 set -euo pipefail
 
 # $1:CLANG_PATH $2:KERNEL_NAME $3:VERSION $4:BUILD_TYPE
-# $5:BUILD_NUMBER $6:KSU $7:FULL_LTO $8:NOBUILD
+# $5:BUILD_NUMBER $6:FULL_LTO
 # Compiler
 CLANG_PATH="$1"
 
@@ -21,9 +21,6 @@ BUILD_NUMBER="$5"
 
 # Use Full LTO
 FULL_LTO="$6"
-
-# OKI
-OKI="$7"
 
 grep_prop() {
     local REGEX="s/^$1=//p"
@@ -90,11 +87,6 @@ KERNEL_DIR="$(pwd)"
 INSTALL_MOD_PATH="$KERNEL_DIR/magisk/kernel_modules"
 OUT_DIR="$KERNEL_DIR/../build_dir"
 MOD_DIR="$KERNEL_DIR/../out_dir"
-
-if [ "$OKI" = "true" ]; then
-    OUT_DIR="$KERNEL_DIR/../build_oki_dir"
-    MOD_DIR="$KERNEL_DIR/../out_oki_dir"
-fi
 
 # Kernel Branch and KMI Generation
 get_kernel_version() {
@@ -191,7 +183,7 @@ echo "-------------------"
 echo "Installing modules"
 echo "-------------------"
 mkdir -p "$INSTALL_MOD_PATH"
-for MOD in zram perfmgr; do
+for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p; do
     find "$MOD_DIR" -name "$MOD".ko -exec cp -af {} "$INSTALL_MOD_PATH" \;
 done
 

@@ -40,10 +40,6 @@ on:
         required: true
         default: false
         type: boolean
-      OKI:
-        required: false
-        default: false
-        type: boolean
 jobs:
   build-kernel:
     name: Build Kernel ${{inputs.KERNEL_BRANCH}}
@@ -123,9 +119,6 @@ jobs:
         id: setup_ccache_key
         run: |
           CCACHE_KEY="gki_build-${{inputs.KERNEL_BRANCH}}"
-          if [ "${{inputs.OKI}}" == true ]; then
-            CCACHE_KEY="oki_build-${{inputs.KERNEL_BRANCH}}"
-          fi
 
           if [ "${{inputs.FullLTO}}" == true ]; then
             CCACHE_KEY="$CCACHE_KEY-flto"
@@ -153,7 +146,7 @@ jobs:
           cd kernel_common
           bash $GITHUB_WORKSPACE/build_kernel.sh \
             "$GITHUB_WORKSPACE/pandora-clang/bin" "${{inputs.KERNEL_NAME}}" "${{inputs.VERSION}}" \
-            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}" "${{inputs.OKI}}"
+            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}"
 
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"

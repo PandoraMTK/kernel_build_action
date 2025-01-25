@@ -1,0 +1,30 @@
+name: Build Marisa Kernels
+run-name: Build Marisa Kernels
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        required: true
+        type: string
+        description: Version
+      BRANCH:
+        required: false
+        type: string
+        description: branch
+        default: lineage-20
+jobs:
+  init-build:
+    name: Build Kernel
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - device: marble
+            COMPILER_VER: 19.1.5-20241130
+    uses: PandoraMTK/kernel_build_action/.github/workflows/build-marisa.yml@main
+    secrets: inherit
+    with:
+      VERSION: ${{ inputs.VERSION }}
+      DEVICE: ${{ matrix.device}}
+      BRANCH: ${{inputs.BRANCH}}
+      COMPILER_VER: ${{matrix.COMPILER_VER}}

@@ -1,5 +1,5 @@
-name: BTK Kernel Build
-run-name: Build BTK Kernel ${{inputs.DEVICE}}
+name: Marisa Kernel Build
+run-name: Build Kernel Marisa ${{inputs.DEVICE}}
 on:
   workflow_call:
     inputs:
@@ -25,7 +25,7 @@ on:
         type: boolean
 jobs:
   build-kernel:
-    name: Build Kernel ${{inputs.DEVICE}}
+    name: Build Kernel Marisa ${{inputs.DEVICE}} ${{inputs.BRANCH}}
     runs-on: ubuntu-24.04
     env:
       CCACHE_NOHASHDIR: "true"
@@ -83,9 +83,9 @@ jobs:
         uses: actions/checkout@main
         with:
           token: ${{ secrets.CI_TOKEN }}
-          repository: BocchiTheKernel/android_kernel_xiaomi_sm8350
-          path: kernel_common
+          repository: PandoraMTK/android_kernel_xiaomi_marble
           ref: ${{inputs.BRANCH}}
+          path: kernel_common
           fetch-depth: 1
       - name: Download Pandora Clang
         uses: robinraju/release-downloader@main
@@ -100,7 +100,7 @@ jobs:
       - name: Setup CCACHE key
         id: setup_ccache_key
         run: |
-          CCACHE_KEY="gki_build-btk-${{inputs.DEVICE}}"
+          CCACHE_KEY="marisa_build-${{inputs.DEVICE}}"
 
           echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
       - name: Setup ccache
@@ -122,8 +122,8 @@ jobs:
           set -euo pipefail
 
           cd kernel_common
-          bash $GITHUB_WORKSPACE/build_kernel_btk.sh \
-            "$GITHUB_WORKSPACE/pandora-clang/bin" "${{inputs.VERSION}}" "${{inputs.DEVICE}}"
+          bash $GITHUB_WORKSPACE/build_kernel_marisa.sh \
+            "$GITHUB_WORKSPACE/pandora-clang/bin" "${{inputs.DEVICE}}" "${{inputs.VERSION}}"
 
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
