@@ -84,7 +84,7 @@ DAY="$(printf "\x$(printf %x $((96 + $(date +"%u"))))")"
 
 # Paths
 KERNEL_DIR="$(pwd)"
-INSTALL_MOD_PATH="$KERNEL_DIR/magisk/kernel_modules"
+MAGISK_MOD_PATH="$KERNEL_DIR/magisk/kernel_modules"
 OUT_DIR="$KERNEL_DIR/../build_dir"
 MOD_DIR="$KERNEL_DIR/../out_dir"
 
@@ -123,7 +123,7 @@ get_kernel_version() {
         MODULE_VERCODE="$(date +"%g%m%d")"
         ;;
     *)
-        BETA_VERSION="DEV"
+        BETA_VERSION="$BETA_VERSION-DEV"
         BUILD_NUMBER="n"
         MODULE_VERCODE="$(date +"%s")"
         MODULE_VER="$BETA_VERSION\_$(date +"%g%m%d%H%M%S")"
@@ -182,9 +182,9 @@ ls -a "$ZIMAGE_DIR"
 echo "-------------------"
 echo "Installing modules"
 echo "-------------------"
-mkdir -p "$INSTALL_MOD_PATH"
+mkdir -p "$MAGISK_MOD_PATH"
 for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p; do
-    find "$MOD_DIR" -name "$MOD".ko -exec cp -af {} "$INSTALL_MOD_PATH" \;
+    find "$MOD_DIR" -name "$MOD".ko -exec cp -af {} "$MAGISK_MOD_PATH" \;
 done
 
 echo "-------------------"
@@ -213,7 +213,8 @@ rm -f "$KERNEL_DIR"/*.zip
 ZIPNAME="Kernel-$KERNEL_NAME-$kernel_version"
 case "$BUILD_TYPE" in
 "REL") ZIPNAME="$ZIPNAME-$BETA_VERSION" ;;
-*) ZIPNAME="$ZIPNAME-$BETA_VERSION-$TIME" ;;
+"BETA") ZIPNAME="$ZIPNAME-$BETA_VERSION-$TIME" ;;
+*) ZIPNAME="$ZIPNAME-$WEEK$DAY-$TIME-$BETA_VERSION" ;;
 esac
 
 mv -f "$OUT_DIR"/anykernel/anykernel.zip "$KERNEL_DIR/$ZIPNAME".zip

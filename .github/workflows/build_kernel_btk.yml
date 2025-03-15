@@ -29,3 +29,4 @@ jobs:
       VERSION: ${{ inputs.VERSION }}
       DEVICE: ${{ matrix.device}}
       BRANCH: ${{inputs.BRANCH}}
+      COMPILER_VER: 18.1.5-20240504

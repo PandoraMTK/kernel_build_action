@@ -51,12 +51,14 @@ jobs:
             ccache pahole git automake flex bison build-essential zlib1g-dev make \
             libelf-dev libssl-dev openssl bc device-tree-compiler python3 python3-pip \
             python3-telethon 7zip 7zip-standalone gzip lz4 fakeroot build-essential \
-            kexec-tools kernel-wedge libncurses-dev asciidoc dos2unix zstd
+            kexec-tools kernel-wedge libncurses-dev asciidoc dos2unix zstd \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf \
+            libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross
           sudo -E apt-get clean
           df -h
       - name: Optimize Memory Management
         run: |
-          sudo -E sysctl vm.swappiness=200
+          sudo -E sysctl vm.swappiness=1
           sudo -E sysctl vm.min_free_kbytes=32768
           sudo -E sysctl vm.watermark_scale_factor=100
           sudo -E sysctl vm.overcommit_memory=1
@@ -100,7 +102,7 @@ jobs:
       - name: Setup CCACHE key
         id: setup_ccache_key
         run: |
-          CCACHE_KEY="gki_build-btk-${{inputs.DEVICE}}"
+          CCACHE_KEY="btk-${{inputs.DEVICE}}-build"
 
           echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
       - name: Setup ccache

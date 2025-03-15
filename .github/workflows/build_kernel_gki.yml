@@ -42,6 +42,10 @@ on:
         required: false
         default: false
         type: boolean
+      UPDATE_CCACHE:
+        required: false
+        default: false
+        type: boolean
 jobs:
   init-build:
     name: Build Kernel
@@ -54,25 +58,25 @@ jobs:
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
             KERNEL_BRANCH: android12-5.10
             VERSION: ${{ inputs.VERSION }}
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: 20.1.2-20250406
           - KERNEL_NAME: Yuni
             IF: ${{inputs.BUILD_5_15}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15
             VERSION: ${{ inputs.VERSION }}
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: 20.1.2-20250406
           - KERNEL_NAME: AngelBeats
             IF: ${{inputs.BUILD_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1
             VERSION: ${{ inputs.VERSION }}
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: 20.1.2-20250406
           - KERNEL_NAME: Haruhi
             IF: ${{inputs.BUILD_6_6}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
             KERNEL_BRANCH: android15-6.6
             VERSION: ${{ inputs.VERSION }}
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: 20.1.2-20250406
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     with:
@@ -84,4 +88,5 @@ jobs:
       BUILD_TYPE: ${{inputs.BUILD_TYPE}}
       FullLTO: ${{inputs.FullLTO}}
       DEBUG: ${{inputs.DEBUG}}
+      UPDATE_CCACHE: ${{inputs.UPDATE_CCACHE}}
       COMPILER_VER: ${{matrix.COMPILER_VER}}

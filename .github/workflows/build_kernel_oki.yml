@@ -37,6 +37,10 @@ on:
         required: false
         default: false
         type: boolean
+      UPDATE_CCACHE:
+        required: false
+        default: false
+        type: boolean
 jobs:
   init-build:
     name: Build Kernel
@@ -73,4 +77,5 @@ jobs:
       BUILD_TYPE: ${{inputs.BUILD_TYPE}}
       FullLTO: ${{inputs.FullLTO}}
       DEBUG: ${{inputs.DEBUG}}
+      UPDATE_CCACHE: ${{inputs.UPDATE_CCACHE}}
       COMPILER_VER: ${{matrix.COMPILER_VER}}
