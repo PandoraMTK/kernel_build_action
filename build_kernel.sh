@@ -194,7 +194,8 @@ cp -af "$KERNEL_DIR"/magisk "$OUT_DIR/"
 cd "$OUT_DIR"/magisk || abort "No magisk module!"
 sed -i "s#STATIC_VERSION#$MODULE_VER#g" module.prop
 sed -i "s#STATIC_VERCODE#$MODULE_VERCODE#g" module.prop
-7zz a -mx1 -mmt"$THREADS" '-xr!config/old' '-xr!config/origin' magisk.zip ./* >/dev/null 2>&1
+# 7zz a -mx1 -mmt"$THREADS" '-xr!config/old' '-xr!config/origin' magisk.zip ./* >/dev/null 2>&1
+zip -q -b "$OUT_DIR"/magisk -5 -r magisk.zip ./*
 
 echo "-------------------"
 echo "Making flash package"
@@ -203,7 +204,8 @@ cp -af "$KERNEL_DIR"/anykernel "$OUT_DIR"
 cp -af "$ZIMAGE_DIR"/Image "$OUT_DIR"/anykernel/
 mv -f magisk.zip "$OUT_DIR"/anykernel/
 cd "$OUT_DIR"/anykernel/ || abort "No anykernel!"
-7zz a -mx1 -mmt"$THREADS" anykernel.zip ./* >/dev/null 2>&1
+# 7zz a -mx1 -mmt"$THREADS" anykernel.zip ./* >/dev/null 2>&1
+zip -q -b "$OUT_DIR"/anykernel -5 -r anykernel.zip ./*
 
 echo "-------------------"
 echo "Outputting flash package"

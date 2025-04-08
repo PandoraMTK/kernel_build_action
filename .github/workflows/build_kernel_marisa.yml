@@ -20,7 +20,7 @@ jobs:
       matrix:
         include:
           - device: marble
-            COMPILER_VER: 19.1.5-20241130
+            COMPILER_VER: 19.1.7-20250316
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-marisa.yml@main
     secrets: inherit
     with:

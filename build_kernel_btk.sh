@@ -58,7 +58,7 @@ echo "Making Kernel:"
 echo "-------------------"
 echo
 make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH "$DEFCONFIG" -j"$THREADS"
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH -j"$THREADS" Image Image.gz
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH -j"$THREADS" Image
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"
@@ -71,20 +71,23 @@ ls -a "$ZIMAGE_DIR"
 echo "-------------------"
 echo "Making magisk module"
 echo "-------------------"
-cd "$KERNEL_DIR"/magisk || abort "No magisk module!"
-7zz a -mx1 -mmt"$THREADS" magisk.zip ./* >/dev/null
-
-mkdir -p "$OUT_DIR"/tmp
-cp -fp "$ZIMAGE_DIR"/Image.gz "$OUT_DIR"/tmp
-cp -afrp "$KERNEL_DIR"/anykernel/* "$OUT_DIR"/tmp
-mv -f "$KERNEL_DIR/magisk/magisk.zip" "$OUT_DIR"/tmp/
-
-cd "$OUT_DIR"/tmp || abort "No anykernel!"
+cp -af "$KERNEL_DIR"/magisk "$OUT_DIR/"
+cd "$OUT_DIR"/magisk || abort "No magisk module!"
+sed -i "s#STATIC_VERSION#$MODULE_VER#g" module.prop
+sed -i "s#STATIC_VERCODE#$MODULE_VERCODE#g" module.prop
+# 7zz a -mx1 -mmt"$THREADS" magisk.zip ./* >/dev/null 2>&1
+zip -b "$OUT_DIR"/magisk -5 -r magisk.zip ./* >/dev/null 2>&1
 
 echo "-------------------"
 echo "Making flash package"
 echo "-------------------"
-7zz a -mx1 -mmt"$THREADS" tmp.zip ./* >/dev/null 2>&1
+cp -af "$KERNEL_DIR"/anykernel "$OUT_DIR"
+cp -af "$ZIMAGE_DIR"/Image "$OUT_DIR"/anykernel/
+mv -f magisk.zip "$OUT_DIR"/anykernel/
+cd "$OUT_DIR"/anykernel/ || abort "No anykernel!"
+# 7zz a -mx1 -mmt"$THREADS" anykernel.zip ./* >/dev/null 2>&1
+zip -b "$OUT_DIR"/anykernel -5 -r anykernel.zip ./* >/dev/null 2>&1
+
 cd .. || abort "Dir missing!"
 rm -f "$KERNEL_DIR"/*.zip
 case "$DEVICE" in
