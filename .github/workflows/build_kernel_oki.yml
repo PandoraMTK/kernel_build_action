@@ -29,6 +29,11 @@ on:
         type: boolean
         default: true
         description: Build 6.1
+      BUILD_6_6:
+        required: false
+        type: boolean
+        default: true
+        description: Build 6.6
       FullLTO:
         required: false
         default: false
@@ -66,6 +71,12 @@ jobs:
             KERNEL_BRANCH: android14-6.1-o
             VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: r484474c
+          - KERNEL_NAME: HummingBird
+            IF: ${{inputs.BUILD_6_6}}
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
+            KERNEL_BRANCH: android15-6.6-o
+            VERSION: ${{ inputs.VERSION }}
+            COMPILER_VER: r522817
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     with:
