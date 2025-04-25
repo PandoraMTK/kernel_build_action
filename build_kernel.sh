@@ -152,7 +152,18 @@ echo "Making Kernel:"
 echo "-------------------"
 echo
 rm -rf "$MOD_DIR"
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
+EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=/dev/null"
+FDO_FILE="$KERNEL_DIR/android/gki/aarch64/afdo/kernel.afdo"
+if [ -f "$FDO_FILE" ]; then
+    EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=$FDO_FILE"
+fi
+make CC="$CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
+if [ -f "$FDO_FILE" ]; then
+    echo "-------------------"
+    echo "Enabling AutoFDO"
+    echo "-------------------"
+    "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e CONFIG_AUTOFDO_CLANG
+fi
 if $FULL_LTO; then
     echo "-------------------"
     echo "Enabling FullLTO"
@@ -168,8 +179,8 @@ else
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_CLANG_FULL
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e LTO_CLANG_Thin
 fi
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" -j"$THREADS" Image modules 2>&1
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" -j"$THREADS" Image.gz modules 2>&1
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"
@@ -201,7 +212,7 @@ echo "-------------------"
 echo "Making flash package"
 echo "-------------------"
 cp -af "$KERNEL_DIR"/anykernel "$OUT_DIR"
-cp -af "$ZIMAGE_DIR"/Image "$OUT_DIR"/anykernel/
+cp -af "$ZIMAGE_DIR"/Image.gz "$OUT_DIR"/anykernel/
 mv -f magisk.zip "$OUT_DIR"/anykernel/
 cd "$OUT_DIR"/anykernel/ || abort "No anykernel!"
 # 7zz a -mx1 -mmt"$THREADS" anykernel.zip ./* >/dev/null 2>&1

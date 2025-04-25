@@ -34,7 +34,7 @@ async def main():
     session_dir = os.path.join(script_dir, "tgbot.session")
     async with await TelegramClient(session=session_dir, api_id=API_ID, api_hash=API_HASH).start(bot_token=BOT_TOKEN) as bot:
         print("[+] Sending")
-        await bot.send_file(entity=CHAT_ID, file=files, parse_mode=None, silent=True)
+        await bot.send_file(entity=CHAT_ID, file=files, parse_mode=None, silent=False)
         print("[+] Done!")
         exit(0)
     exit(0)

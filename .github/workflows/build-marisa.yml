@@ -26,22 +26,11 @@ on:
 jobs:
   build-kernel:
     name: Build Kernel Marisa ${{inputs.DEVICE}} ${{inputs.BRANCH}}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-latest
     env:
       CCACHE_NOHASHDIR: "true"
-      CCACHE_HARDLINK: "true"
+      DEBIAN_FRONTEND: "noninteractive"
     steps:
-      - name: Clean Packages
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          sudo -E apt-get update
-          sudo -E apt-get autopurge -y *google* *android* *java* *jdk* *sql* *php* \
-            *rust* *chrome* *edge* *firefox* *snap* *golang* *nodejs* *ruby* \
-            *nginx* *apache* *aspnet* *mongo* *dotnet* *llvm* *powershell* *swift* \
-            *apple* *nuget* *vcpkg* *cpan* *helm* *mono* *microsoft* *msbuild* \
-            *julia* *kotlin* *ant* *gradle* *maven* *lerna* *sbt* *heroku* *aliyun* \
-            *amazon* *aws* > /dev/null 2>&1
-
       - name: Clean Build Space
         uses: easimon/maximize-build-space@master
         with:
@@ -55,13 +44,13 @@ jobs:
           remove-docker-images: true
       - name: Install Toolchain
         run: |
-          export DEBIAN_FRONTEND=noninteractive
           sudo -E apt-get update
-          sudo -E apt-get install --no-install-recommends -y lsb-release linux-modules-extra-"$(uname -r)" \
-            ccache pahole git automake flex bison build-essential zlib1g-dev make \
-            libelf-dev libssl-dev openssl bc device-tree-compiler python3 python3-pip \
-            python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz gzip lz4 fakeroot \
-            build-essential kexec-tools kernel-wedge libncurses-dev asciidoc dos2unix zstd \
+          sudo -E apt-get install --no-install-recommends -y \
+            lsb-release linux-modules-extra-"$(uname -r)" ccache pahole \
+            git automake flex bison build-essential zlib1g-dev make \
+            libelf-dev libssl-dev openssl bc device-tree-compiler gzip \
+            python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz \
+            libncurses-dev asciidoc dos2unix lz4 fakeroot python3 python3-pip \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf \
             libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross
           sudo -E apt-get clean
@@ -71,6 +60,7 @@ jobs:
           sudo -E sysctl vm.swappiness=1
           sudo -E sysctl vm.min_free_kbytes=32768
           sudo -E sysctl vm.watermark_scale_factor=100
+          sudo -E sysctl vm.watermark_boost_factor=15000
           sudo -E sysctl vm.overcommit_memory=1
           sudo -E sysctl vm.page-cluster=0
           sudo -E modprobe zram
@@ -122,6 +112,7 @@ jobs:
           max-size: 3G
           save: true
           append-timestamp: true
+          evict-old-files: job
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         if: ${{inputs.DEBUG}}

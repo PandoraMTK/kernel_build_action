@@ -99,7 +99,7 @@ echo "-------------------"
 "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_NONE
 "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_CLANG_FULL
 "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e LTO_CLANG_Thin
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH LOCALVERSION="$LOCALVERSION" -j"$THREADS" Image dtbs 2>&1
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH LOCALVERSION="$LOCALVERSION" -j"$THREADS" Image.gz dtbs 2>&1
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"
@@ -123,7 +123,7 @@ echo "-------------------"
 echo "Making flash package"
 echo "-------------------"
 cp -af "$KERNEL_DIR"/anykernel "$OUT_DIR"
-cp -af "$ZIMAGE_DIR"/Image "$OUT_DIR"/anykernel/
+cp -af "$ZIMAGE_DIR"/Image.gz "$OUT_DIR"/anykernel/
 cp -af "$ZIMAGE_DIR"/dts/vendor/qcom/ukee.dtb "$OUT_DIR"/anykernel/dtb
 mv -f magisk.zip "$OUT_DIR"/anykernel/
 cd "$OUT_DIR"/anykernel/ || abort "No anykernel!"

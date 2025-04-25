@@ -58,7 +58,7 @@ echo "Making Kernel:"
 echo "-------------------"
 echo
 make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH "$DEFCONFIG" -j"$THREADS"
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH -j"$THREADS" Image
+make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 O="$OUT_DIR" ARCH=$ARCH -j"$THREADS" Image.gz
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"
@@ -82,7 +82,7 @@ echo "-------------------"
 echo "Making flash package"
 echo "-------------------"
 cp -af "$KERNEL_DIR"/anykernel "$OUT_DIR"
-cp -af "$ZIMAGE_DIR"/Image "$OUT_DIR"/anykernel/
+cp -af "$ZIMAGE_DIR"/Image.gz "$OUT_DIR"/anykernel/
 mv -f magisk.zip "$OUT_DIR"/anykernel/
 cd "$OUT_DIR"/anykernel/ || abort "No anykernel!"
 # 7zz a -mx1 -mmt"$THREADS" anykernel.zip ./* >/dev/null 2>&1
