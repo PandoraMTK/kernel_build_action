@@ -34,6 +34,11 @@ on:
         type: boolean
         default: true
         description: Build 6.6
+      BUILD_6_12:
+        required: false
+        type: boolean
+        default: false
+        description: Build 6.12
       FullLTO:
         required: false
         default: false
@@ -57,26 +62,27 @@ jobs:
             IF: ${{inputs.BUILD_5_10}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
             KERNEL_BRANCH: android12-5.10-o
-            VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: r416183b
           - KERNEL_NAME: OuPi
             IF: ${{inputs.BUILD_5_15}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15-o
-            VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: r450784e
           - KERNEL_NAME: OngelPeats
             IF: ${{inputs.BUILD_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1-o
-            VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: r484474c
           - KERNEL_NAME: HummingBird
             IF: ${{inputs.BUILD_6_6}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
             KERNEL_BRANCH: android15-6.6-o
-            VERSION: ${{ inputs.VERSION }}
             COMPILER_VER: r522817
+          - KERNEL_NAME: STUB
+            IF: ${{inputs.BUILD_6_12}}
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
+            KERNEL_BRANCH: android16-6.12-o
+            COMPILER_VER:  r536225
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     with:
@@ -84,7 +90,7 @@ jobs:
       NOSKIP: ${{matrix.IF}}
       KERNEL_REPO: ${{matrix.KERNEL_REPO}}
       KERNEL_BRANCH: ${{matrix.KERNEL_BRANCH}}
-      VERSION: ${{ matrix.VERSION }}
+      VERSION: ${{ inputs.VERSION }}
       BUILD_TYPE: ${{inputs.BUILD_TYPE}}
       FullLTO: ${{inputs.FullLTO}}
       DEBUG: ${{inputs.DEBUG}}

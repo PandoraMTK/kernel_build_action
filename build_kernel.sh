@@ -62,10 +62,12 @@ get_number() {
 }
 
 # Exports
-export PATH="$CLANG_PATH:$PATH"
-export CCACHE="ccache"
-export CC="$CLANG_PATH/clang"
-export CXX="$CLANG_PATH/clang++"
+export PATH="$CLANG_PATH/bin:$PATH"
+export RUSTC_WRAPPER="sccache"
+export RUSTFLAGS="-C linker=$CLANG_PATH/bin/clang -C link-arg=-fuse-ld=lld"
+export CCACHE="sccache"
+export CC="$CLANG_PATH/bin/clang"
+export CXX="$CLANG_PATH/bin/clang++"
 export CROSS_COMPILE="aarch64-linux-gnu-"
 export CROSS_COMPILE_COMPAT="arm-linux-gnueabihf-"
 export ARCH="arm64"
@@ -75,6 +77,8 @@ export KBUILD_BUILD_HOST="Pandora"
 export DEFCONFIG="gki_defconfig"
 MODULE_VER=""
 MODULE_VERCODE=""
+NO_LTO="false"
+DEV="false"
 
 # Resources
 THREADS="$(nproc --all)"
@@ -101,11 +105,12 @@ get_kernel_version() {
     SUBLEVEL="$(grep_prop_space SUBLEVEL "$KERNEL_DIR/Makefile")"
 
     KERNEL_VER="$VERSION.$PATCHLEVEL.$SUBLEVEL"
-    KERNEL_LOCALVER=$(grep_prop "CONFIG_LOCALVERSION" "$OUT_DIR/.config" | tr -d '"')
+    KERNEL_LOCALVER=$(grep_prop "CONFIG_LOCALVERSION" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG" | tr -d '"')
 
     BRANCH="$(grep_prop "BRANCH" "$KERNEL_DIR/build.config.constants")"
     [ -z "$BRANCH" ] && BRANCH="$(grep_prop "BRANCH" "$KERNEL_DIR/build.config.common")"
-    KMI_GENERATION="$(grep_prop "KMI_GENERATION" "$KERNEL_DIR/build.config.common")"
+    KMI_GENERATION="$(grep_prop "KMI_GENERATION" "$KERNEL_DIR/build.config.constants")"
+    [ -z "$KMI_GENERATION" ] && KMI_GENERATION="$(grep_prop "KMI_GENERATION" "$KERNEL_DIR/build.config.common")"
     android_release=$(echo "$BRANCH" | sed -e '/android[0-9]\{2,\}/!{q255};s/^\(android[0-9]\{2,\}\)-.*/\1/')
     kernel_version="$(echo "$BRANCH" | awk -F- '{print $2}')"
 
@@ -113,9 +118,9 @@ get_kernel_version() {
     case "$BUILD_TYPE" in
     "REL")
         BETA_VERSION="$KERNEL_VERSION"
-        BUILD_NUMBER="n"
         MODULE_VER="$BETA_VERSION"
         MODULE_VERCODE="$(get_number "$MODULE_VER")"
+        BUILD_NUMBER="n"
         ;;
     "BETA")
         BETA_VERSION="$WEEK$DAY"
@@ -123,25 +128,44 @@ get_kernel_version() {
         MODULE_VERCODE="$(date +"%g%m%d")"
         ;;
     *)
-        BETA_VERSION="$BETA_VERSION-DEV"
+        BETA_VERSION="$KERNEL_VERSION-DEV"
+        DEV="true"
         BUILD_NUMBER="n"
         MODULE_VERCODE="$(date +"%s")"
-        MODULE_VER="$BETA_VERSION\_$(date +"%g%m%d%H%M%S")"
+        MODULE_VER="$(date +"%y.%m.%d.$BETA_VERSION %H:%M:%S")"
         ;;
     esac
 
     [ -z "$BUILD_NUMBER" ] && BUILD_NUMBER="$(date +"%s")"
     [ "$BUILD_NUMBER" = "n" ] && BUILD_NUMBER=""
-    BUILD_NUMBER="$(echo "$BUILD_NUMBER" | cut -c1-8)"
+    # BUILD_NUMBER="$(echo "$BUILD_NUMBER" | cut -c1-8)"
     KMI_VER="$android_release-$KMI_GENERATION"
-    SCM_VERSION="$KMI_VER-g$(git rev-parse --verify HEAD | cut -c1-12)"
-    FULL_VERSION="$KERNEL_VER-$KERNEL_NAME-$BETA_VERSION-$SCM_VERSION"
-    [ -n "$BUILD_NUMBER" ] && FULL_VERSION="$FULL_VERSION-ab$BUILD_NUMBER"
-    FULL_VERSION="$FULL_VERSION$KERNEL_LOCALVER"
+    # SCM_VERSION="g$(git rev-parse --verify HEAD | cut -c1-12)"
+    # SCM_VERSION=""
+    FULL_VERSION="$KERNEL_VER-$KMI_VER"
+    # [ "$DEV" != "true" ] && FULL_VERSION="$FULL_VERSION-$SCM_VERSION"
+    # [ -n "$BUILD_NUMBER" ] && FULL_VERSION="$FULL_VERSION-ab$BUILD_NUMBER"
+    FULL_VERSION="$FULL_VERSION$KERNEL_LOCALVER-$KERNEL_NAME-$BETA_VERSION"
     export KERNELRELEASE="$FULL_VERSION"
     echo "$time: $FULL_VERSION"
 }
 get_kernel_version
+
+init_rust() {
+    RUST="$(grep_prop "CONFIG_RUST" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG")"
+    [ "$RUST" != "y" ] && return 0
+    [ ! -f "$KERNEL_DIR/scripts/min-tool-version.sh" ] && return 0
+    RUSTC_VER="$(grep_prop "RUSTC_VERSION" "$KERNEL_DIR/build.config.constants")"
+    [ "$RUSTC_VER" = "" ] && return 0
+
+    NO_LTO=true
+
+    rustup override set "$RUSTC_VER"
+    rustup component add rust-src
+    [ -f "$CLANG_PATH/bin/bindgen" ] && return 0
+    cargo install --force --root "$CLANG_PATH" bindgen-cli
+}
+init_rust
 
 ZIMAGE_DIR="$OUT_DIR/arch/arm64/boot"
 DATE_BEGIN=$(date +"%s")
@@ -152,11 +176,17 @@ echo "Making Kernel:"
 echo "-------------------"
 echo
 rm -rf "$MOD_DIR"
-EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=/dev/null"
+
+EXTRA_FLAGS="LLVM_IAS=1"
 FDO_FILE="$KERNEL_DIR/android/gki/aarch64/afdo/kernel.afdo"
+FDO_FILE1="$KERNEL_DIR/gki/aarch64/afdo/kernel.afdo"
 if [ -f "$FDO_FILE" ]; then
     EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=$FDO_FILE"
 fi
+if [ -f "$FDO_FILE1" ]; then
+    EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=$FDO_FILE1"
+fi
+
 make CC="$CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
 if [ -f "$FDO_FILE" ]; then
     echo "-------------------"
@@ -164,7 +194,14 @@ if [ -f "$FDO_FILE" ]; then
     echo "-------------------"
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e CONFIG_AUTOFDO_CLANG
 fi
-if $FULL_LTO; then
+if $NO_LTO; then
+    echo "-------------------"
+    echo "Disabling LTO"
+    echo "-------------------"
+    "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e LTO_NONE
+    "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_CLANG_THIN
+    "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_CLANG_FULL
+elif $FULL_LTO; then
     echo "-------------------"
     echo "Enabling FullLTO"
     echo "-------------------"
@@ -194,7 +231,7 @@ echo "-------------------"
 echo "Installing modules"
 echo "-------------------"
 mkdir -p "$MAGISK_MOD_PATH"
-for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p; do
+for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p perfmgr; do
     find "$MOD_DIR" -name "$MOD".ko -exec cp -af {} "$MAGISK_MOD_PATH" \;
 done
 
