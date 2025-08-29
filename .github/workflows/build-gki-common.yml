@@ -40,9 +40,18 @@ on:
         required: true
         default: false
         type: boolean
+      CCACHE_TYPE:
+        required: true
+        type: string
+        default: ccache
+        description: ccache Type
       UPDATE_CCACHE:
         required: true
         default: false
+        type: boolean
+      UPLOAD_PACKAGE:
+        required: true
+        default: true
         type: boolean
 jobs:
   build-kernel:
@@ -71,7 +80,7 @@ jobs:
         run: |
           sudo -E apt-get update
           sudo -E apt-get install --no-install-recommends -y \
-            lsb-release linux-modules-extra-"$(uname -r)" ccache pahole \
+            lsb-release linux-modules-extra-"$(uname -r)" ccache sccache pahole \
             git automake flex bison build-essential zlib1g-dev make rustup \
             libelf-dev libssl-dev openssl bc device-tree-compiler gzip libdw-dev \
             python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz \
@@ -153,7 +162,7 @@ jobs:
           save: ${{inputs.UPDATE_CCACHE}}
           restore: ${{inputs.UPDATE_CCACHE  == false}}
           append-timestamp: true
-          variant: sccache
+          variant: ${{inputs.CCACHE_TYPE}}
           evict-old-files: job
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
@@ -171,19 +180,13 @@ jobs:
           cd kernel_common
           bash $GITHUB_WORKSPACE/build_kernel.sh \
             "$GITHUB_WORKSPACE/pandora-clang" "${{inputs.KERNEL_NAME}}" "${{inputs.VERSION}}" \
-            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}"
+            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}" "${{inputs.CCACHE_TYPE}}"
 
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
           echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
-      - name: Bot session cache
-        id: bot_session_cache
-        uses: actions/cache@v4
-        with:
-          path: tgbot.session
-          key: ${{ runner.os }}-bot-session
       - name: Upload to telegram
-        if: ${{inputs.UPDATE_CCACHE == false}}
+        if: ${{inputs.UPLOAD_PACKAGE == true}}
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}

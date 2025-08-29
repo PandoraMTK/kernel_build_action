@@ -131,12 +131,6 @@ jobs:
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
           echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
-      - name: Bot session cache
-        id: bot_session_cache
-        uses: actions/cache@v4
-        with:
-          path: tgbot.session
-          key: ${{ runner.os }}-bot-session
       - name: Upload to telegram
         env:
           CHAT_ID: ${{ secrets.CHAT_ID }}

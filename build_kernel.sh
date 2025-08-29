@@ -22,6 +22,9 @@ BUILD_NUMBER="$5"
 # Use Full LTO
 FULL_LTO="$6"
 
+# CCACHE Type(ccache, sccache)
+CCACHE_TYPE="$7"
+
 grep_prop() {
     local REGEX="s/^$1=//p"
     shift
@@ -65,7 +68,7 @@ get_number() {
 export PATH="$CLANG_PATH/bin:$PATH"
 export RUSTC_WRAPPER="sccache"
 export RUSTFLAGS="-C linker=$CLANG_PATH/bin/clang -C link-arg=-fuse-ld=lld"
-export CCACHE="sccache"
+export CCACHE="$CCACHE_TYPE"
 export CC="$CLANG_PATH/bin/clang"
 export CXX="$CLANG_PATH/bin/clang++"
 export CROSS_COMPILE="aarch64-linux-gnu-"
