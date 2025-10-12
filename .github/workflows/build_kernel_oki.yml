@@ -14,16 +14,11 @@ on:
         options:
           - BETA
           - REL
-      BUILD_5_10_5_15:
+      BUILD_5_10_5_15_6_1:
         required: false
         type: boolean
         default: true
-        description: Build 5.10 & 5.15
-      BUILD_6_1:
-        required: false
-        type: boolean
-        default: true
-        description: Build 6.1
+        description: Build 5.10 & 5.15 & 6.1
       BUILD_6_6:
         required: false
         type: boolean
@@ -34,6 +29,11 @@ on:
         type: boolean
         default: false
         description: Build 6.12
+      USE_SELFHOST:
+        required: false
+        type: boolean
+        default: true
+        description: Use self-host runner
       FullLTO:
         required: false
         default: false
@@ -59,22 +59,22 @@ jobs:
     name: Build Kernel
     strategy:
       fail-fast: false
-      matrix:
+      matrix: &build_oki_matrix
         include:
           - KERNEL_NAME: OanPora
-            IF: ${{inputs.BUILD_5_10_5_15}}
+            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
             KERNEL_BRANCH: android12-5.10-o
             COMPILER_VER: r416183b
             CCACHE_TYPE: ccache
           - KERNEL_NAME: OuPi
-            IF: ${{inputs.BUILD_5_10_5_15}}
+            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15-o
             COMPILER_VER: r450784e
             CCACHE_TYPE: ccache
           - KERNEL_NAME: OngelPeats
-            IF: ${{inputs.BUILD_6_1}}
+            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1-o
             COMPILER_VER: r484474c
@@ -89,10 +89,32 @@ jobs:
             IF: ${{inputs.BUILD_6_12}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
             KERNEL_BRANCH: android16-6.12-o
-            COMPILER_VER:  r536225
+            COMPILER_VER: r536225
             CCACHE_TYPE: sccache
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
+    if: ${{!inputs.USE_SELFHOST}}
+    with:
+      KERNEL_NAME: ${{matrix.KERNEL_NAME}}
+      NOSKIP: ${{matrix.IF}}
+      KERNEL_REPO: ${{matrix.KERNEL_REPO}}
+      KERNEL_BRANCH: ${{matrix.KERNEL_BRANCH}}
+      VERSION: ${{ inputs.VERSION }}
+      BUILD_TYPE: ${{inputs.BUILD_TYPE}}
+      FullLTO: ${{inputs.FullLTO}}
+      DEBUG: ${{inputs.DEBUG}}
+      UPDATE_CCACHE: ${{inputs.UPDATE_CCACHE}}
+      COMPILER_VER: ${{matrix.COMPILER_VER}}
+      CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
+      UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+  init-build-sh:
+    name: Build Kernel on Self Hosted Runner
+    strategy:
+      fail-fast: false
+      matrix: *build_oki_matrix
+    uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common-sh.yml@main
+    secrets: inherit
+    if: ${{inputs.USE_SELFHOST}}
     with:
       KERNEL_NAME: ${{matrix.KERNEL_NAME}}
       NOSKIP: ${{matrix.IF}}
