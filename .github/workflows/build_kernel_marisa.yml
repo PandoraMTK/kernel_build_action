@@ -14,17 +14,72 @@ on:
         default: lineage-20
 jobs:
   init-build:
-    name: Build Kernel
+    name: Build Marisa Kernels
+    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
         include:
           - device: marble
             COMPILER_VER: 19.1.7-20250316
-    uses: PandoraMTK/kernel_build_action/.github/workflows/build-marisa.yml@main
-    secrets: inherit
-    with:
-      VERSION: ${{ inputs.VERSION }}
-      DEVICE: ${{ matrix.device}}
-      BRANCH: ${{inputs.BRANCH}}
-      COMPILER_VER: ${{matrix.COMPILER_VER}}
+    steps:
+      - name: Clean Build Space
+        uses: easimon/maximize-build-space@master
+        with:
+          root-reserve-mb: 8192
+          temp-reserve-mb: 8192
+          swap-size-mb: 32768
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
+      - name: Install Toolchain
+        run: |
+          sudo -E apt-get update
+          sudo -E apt-get install --no-install-recommends -y \
+            lsb-release linux-modules-extra-"$(uname -r)" ccache pahole \
+            git automake flex bison build-essential zlib1g-dev make \
+            libelf-dev libssl-dev openssl bc device-tree-compiler gzip \
+            python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz \
+            libncurses-dev asciidoc dos2unix lz4 fakeroot python3 python3-pip \
+            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf \
+            libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross
+          sudo -E apt-get clean
+          df -h
+      - name: Optimize Memory Management
+        run: |
+          sudo -E sysctl vm.swappiness=1
+          sudo -E sysctl vm.min_free_kbytes=32768
+          sudo -E sysctl vm.watermark_scale_factor=100
+          sudo -E sysctl vm.watermark_boost_factor=15000
+          sudo -E sysctl vm.overcommit_memory=1
+          sudo -E sysctl vm.page-cluster=0
+          sudo -E modprobe zram
+          echo "0" | sudo -E tee /sys/class/block/zram0/mem_limit
+          echo "zstd" | sudo -E tee /sys/class/block/zram0/comp_algorithm
+          echo "$(awk 'NR==1{print $2*1000}' </proc/meminfo)" | sudo -E tee /sys/class/block/zram0/disksize
+          sudo -E mkswap /dev/zram0
+          sudo -E swapon -p 100 /dev/zram0
+          echo "Y" | sudo -E tee /sys/kernel/mm/lru_gen/enabled
+          echo "1000" | sudo -E tee /sys/kernel/mm/lru_gen/min_ttl_ms
+          echo "1" | sudo -E tee /sys/kernel/mm/swap/vma_ra_enabled
+      - name: Setup TimeZone
+        run: |
+          sudo -E rm -rf /etc/localtime
+          sudo -E ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+      - name: Checkout Actions
+        uses: actions/checkout@main
+        with:
+          ref: ${{github.ref_name}}
+          fetch-depth: 1
+      - name: Build Marisa Kernel ${{matrix.device}}
+        uses: ./.github/actions/build_marisa
+        with:
+          VERSION: ${{inputs.VERSION}}
+          DEVICE: ${{matrix.device}}
+          BRANCH: ${{inputs.BRANCH}}
+          COMPILER_VER: ${{matrix.COMPILER_VER}}
+          CI_TOKEN: ${{secrets.CI_TOKEN}}
+          CHAT_ID: ${{secrets.CHAT_ID}}
+          BOT_TOKEN: ${{secrets.BOT_TOKEN}}

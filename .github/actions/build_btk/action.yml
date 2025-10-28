@@ -1,0 +1,97 @@
+name: BTK Kernel Build
+description: BTK Kernel Build
+permissions:
+  contents: write
+  actions: write
+inputs:
+  VERSION:
+    required: true
+    type: string
+    description: Version
+  DEVICE:
+    required: true
+    type: string
+    description: Device
+  BRANCH:
+    required: true
+    type: string
+    description: branch
+  COMPILER_VER:
+    required: true
+    type: string
+    description: Compiler Version
+  DEBUG:
+    required: false
+    default: false
+    type: boolean
+  CI_TOKEN:
+    required: true
+    type: string
+  CHAT_ID:
+    required: true
+    type: string
+  BOT_TOKEN:
+    required: true
+    type: string
+runs:
+  using: composite
+  steps:
+    - name: Checkout Kernel Code
+      uses: actions/checkout@main
+      with:
+        token: ${{inputs.CI_TOKEN}}
+        repository: BocchiTheKernel/android_kernel_xiaomi_sm8350
+        path: kernel_common
+        ref: ${{inputs.BRANCH}}
+        fetch-depth: 1
+    - name: Download Pandora Clang
+      uses: robinraju/release-downloader@main
+      with:
+        repository: PandoraMTK/pandora-clang
+        tag: ${{inputs.COMPILER_VER}}
+        fileName: pandora-clang.tar.gz
+        extract: true
+        tarBall: false
+        zipBall: false
+        token: ${{inputs.CI_TOKEN}}
+    - name: Setup CCACHE key
+      id: setup_ccache_key
+      shell: bash
+      run: |
+        CCACHE_KEY="btk-${{inputs.DEVICE}}-build"
+
+        echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
+    - name: Setup ccache
+      uses: hendrikmuhs/ccache-action@main
+      with:
+        key: ${{steps.setup_ccache_key.outputs.ccache_key_id}}
+        max-size: 3G
+        save: true
+        append-timestamp: true
+        evict-old-files: true
+    - name: Setup upterm session
+      uses: lhotari/action-upterm@v1
+      if: ${{inputs.DEBUG}}
+      with:
+        ## limits ssh access and adds the ssh public key for the user which triggered the workflow
+        limit-access-to-actor: true
+    - name: Start Build
+      id: kbuild
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        cd kernel_common
+        bash $GITHUB_WORKSPACE/build_kernel_btk.sh \
+          "$GITHUB_WORKSPACE/pandora-clang/bin" "${{inputs.VERSION}}" "${{inputs.DEVICE}}"
+
+        ZIPNAME="$(cat .output)"
+        mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
+        echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
+    - name: Upload to telegram
+      shell: bash
+      env:
+        CHAT_ID: ${{inputs.CHAT_ID}}
+        BOT_TOKEN: ${{inputs.BOT_TOKEN}}
+      run: |
+        python3 $GITHUB_WORKSPACE/tgbot.py $GITHUB_WORKSPACE/${{ steps.kbuild.outputs.archivename }}.zip
