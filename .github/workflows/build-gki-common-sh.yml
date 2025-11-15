@@ -139,4 +139,4 @@ jobs:
           CHAT_ID: ${{ secrets.CHAT_ID }}
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
-          proxychains -q python3 $GITHUB_WORKSPACE/tgbot.py $GITHUB_WORKSPACE/${{ steps.kbuild.outputs.archivename }}.zip
+          python3 $GITHUB_WORKSPACE/tgbot.py $GITHUB_WORKSPACE/${{ steps.kbuild.outputs.archivename }}.zip
