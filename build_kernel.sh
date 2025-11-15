@@ -67,7 +67,7 @@ get_number() {
 # Exports
 export PATH="$CLANG_PATH/bin:$PATH"
 export RUSTC_WRAPPER="sccache"
-export RUSTFLAGS="-C linker=$CLANG_PATH/bin/clang -C link-arg=-fuse-ld=lld"
+export LIBCLANG_PATH="$CLANG_PATH/lib"
 export CCACHE="$CCACHE_TYPE"
 export CC="$CLANG_PATH/bin/clang"
 export CXX="$CLANG_PATH/bin/clang++"
@@ -79,7 +79,6 @@ export KBUILD_BUILD_USER="GHCI"
 export KBUILD_BUILD_HOST="Pandora"
 export KBUILD_MODPOST_WARN="1"
 export KCFLAGS=" -D__ANDROID_COMMON_KERNEL__"
-export KRUSTFLAGS="$RUSTFLAGS"
 export DEFCONFIG="gki_defconfig"
 MODULE_VER=""
 MODULE_VERCODE=""
@@ -168,7 +167,7 @@ init_rust() {
 
     rustup override set "$RUSTC_VER"
     rustup component add rust-src
-    [ -f "$CLANG_PATH/bin/bindgen" ] && return 0
+    # [ -f "$CLANG_PATH/bin/bindgen" ] && return 0
     cargo install --force --root "$CLANG_PATH" bindgen-cli
 }
 init_rust
