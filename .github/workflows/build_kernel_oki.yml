@@ -14,21 +14,16 @@ on:
         options:
           - BETA
           - REL
-      BUILD_5_10_5_15_6_1:
-        required: false
+      BUILD_A:
+        required: true
         type: boolean
         default: true
-        description: Build 5.10 & 5.15 & 6.1
-      BUILD_6_6:
-        required: false
+        description: Build 5.10 & 5.15
+      BUILD_B:
+        required: true
         type: boolean
         default: true
-        description: Build 6.6
-      BUILD_6_12:
-        required: false
-        type: boolean
-        default: false
-        description: Build 6.12
+        description: Build 6.1 & 6.6
       USE_SELFHOST:
         required: false
         type: boolean
@@ -38,7 +33,7 @@ on:
         required: false
         default: false
         type: boolean
-        description: Enable LTO
+        description: Enable FullLTO
       DEBUG:
         required: false
         default: false
@@ -62,35 +57,29 @@ jobs:
       matrix: &build_oki_matrix
         include:
           - KERNEL_NAME: OanPora
-            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
+            IF: ${{inputs.BUILD_A}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.10
             KERNEL_BRANCH: android12-5.10-o
             COMPILER_VER: r416183b
             CCACHE_TYPE: ccache
           - KERNEL_NAME: OuPi
-            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
+            IF: ${{inputs.BUILD_A}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15-o
             COMPILER_VER: r450784e
             CCACHE_TYPE: ccache
           - KERNEL_NAME: OngelPeats
-            IF: ${{inputs.BUILD_5_10_5_15_6_1}}
+            IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1-o
             COMPILER_VER: r484474c
             CCACHE_TYPE: ccache
           - KERNEL_NAME: HummingBird
-            IF: ${{inputs.BUILD_6_6}}
+            IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
             KERNEL_BRANCH: android15-6.6-o
             COMPILER_VER: r522817
             CCACHE_TYPE: ccache
-          - KERNEL_NAME: STUB
-            IF: ${{inputs.BUILD_6_12}}
-            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
-            KERNEL_BRANCH: android16-6.12-o
-            COMPILER_VER: r536225
-            CCACHE_TYPE: sccache
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     if: ${{!inputs.USE_SELFHOST}}

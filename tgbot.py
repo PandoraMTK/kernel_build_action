@@ -91,7 +91,6 @@ async def main():
         session=session_dir,
         api_id=API_ID,
         api_hash=API_HASH,
-        use_ipv6=True,
         proxy=PROXY,
     ).start(bot_token=BOT_TOKEN) as bot:
         print("[+] Sending")

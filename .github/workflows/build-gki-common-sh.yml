@@ -91,7 +91,7 @@ jobs:
         uses: robinraju/release-downloader@main
         with:
           repository: PandoraMTK/pandora-clang
-          tag: pahole-latest
+          tag: pahole-1.31
           fileName: pahole
           extract: false
           tarBall: false
