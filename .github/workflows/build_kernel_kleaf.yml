@@ -1,0 +1,79 @@
+name: Kleaf Build Kernels
+run-name: Kleaf Build Kernels
+on:
+  workflow_dispatch:
+    inputs:
+      VERSION:
+        required: true
+        type: string
+        description: Version
+      BUILD_TYPE:
+        required: true
+        type: choice
+        description: Build Type
+        options:
+          - BETA
+          - REL
+      BUILD_A:
+        required: true
+        type: boolean
+        default: true
+        description: Build 6.12
+      USE_SELFHOST:
+        required: false
+        type: boolean
+        default: true
+        description: Use self-host runner
+      DEBUG:
+        required: false
+        default: false
+        type: boolean
+        description: Enable actions debug
+      UPLOAD_PACKAGE:
+        required: false
+        default: true
+        type: boolean
+        description: Upload package
+jobs:
+  init-build:
+    name: Build Kernel
+    strategy:
+      fail-fast: false
+      matrix: &build_matrix
+        include:
+          - KERNEL_NAME: Hanamaki
+            IF: ${{inputs.BUILD_A}}
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
+            KERNEL_BRANCH: android16-6.12
+            KLEAF_BRANCH: common-android16-6.12-2025-06
+    uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-kleaf.yml@main
+    secrets: inherit
+    if: ${{!inputs.USE_SELFHOST}}
+    with:
+      KERNEL_NAME: ${{matrix.KERNEL_NAME}}
+      NOSKIP: ${{matrix.IF}}
+      KERNEL_REPO: ${{matrix.KERNEL_REPO}}
+      KERNEL_BRANCH: ${{matrix.KERNEL_BRANCH}}
+      KLEAF_BRANCH: ${{matrix.KLEAF_BRANCH}}
+      VERSION: ${{ inputs.VERSION }}
+      BUILD_TYPE: ${{inputs.BUILD_TYPE}}
+      DEBUG: ${{inputs.DEBUG}}
+      UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+  init-build-sh:
+    name: Kleaf build on Self Hosted Runner
+    strategy:
+      fail-fast: false
+      matrix: *build_matrix
+    uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-kleaf-sh.yml@main
+    secrets: inherit
+    if: ${{inputs.USE_SELFHOST}}
+    with:
+      KERNEL_NAME: ${{matrix.KERNEL_NAME}}
+      NOSKIP: ${{matrix.IF}}
+      KERNEL_REPO: ${{matrix.KERNEL_REPO}}
+      KERNEL_BRANCH: ${{matrix.KERNEL_BRANCH}}
+      KLEAF_BRANCH: ${{matrix.KLEAF_BRANCH}}
+      VERSION: ${{ inputs.VERSION }}
+      BUILD_TYPE: ${{inputs.BUILD_TYPE}}
+      DEBUG: ${{inputs.DEBUG}}
+      UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}

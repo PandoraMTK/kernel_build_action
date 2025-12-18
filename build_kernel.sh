@@ -78,6 +78,7 @@ export SUBARCH="$ARCH"
 export KBUILD_BUILD_USER="GHCI"
 export KBUILD_BUILD_HOST="Pandora"
 export KBUILD_MODPOST_WARN="1"
+export KBUILD_GENDWARFKSYMS_STABLE="1"
 export KCFLAGS=" -D__ANDROID_COMMON_KERNEL__"
 export DEFCONFIG="gki_defconfig"
 MODULE_VER=""
@@ -94,8 +95,8 @@ DAY="$(printf "\x$(printf %x $((96 + $(date +"%u"))))")"
 # Paths
 KERNEL_DIR="$(pwd)"
 MAGISK_MOD_PATH="$KERNEL_DIR/magisk/kernel_modules"
-OUT_DIR="$KERNEL_DIR/../build_dir"
-MOD_DIR="$KERNEL_DIR/../out_dir"
+OUT_DIR="$KERNEL_DIR/.build_dir"
+MOD_DIR="$KERNEL_DIR/.out_dir"
 
 # Kernel Branch and KMI Generation
 get_kernel_version() {
@@ -152,6 +153,7 @@ get_kernel_version() {
     # [ -n "$BUILD_NUMBER" ] && FULL_VERSION="$FULL_VERSION-ab$BUILD_NUMBER"
     FULL_VERSION="$FULL_VERSION$KERNEL_LOCALVER-$KERNEL_NAME-$BETA_VERSION"
     export KERNELRELEASE="$FULL_VERSION"
+    echo "$KERNELRELEASE" >"$KERNEL_DIR/.kernelrelease"
     echo "$time: $FULL_VERSION"
 }
 get_kernel_version

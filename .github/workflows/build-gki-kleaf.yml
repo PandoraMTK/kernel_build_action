@@ -1,4 +1,4 @@
-name: GKI Kernel Build
+name: Kleaf Build
 run-name: Build Kernel ${{inputs.KERNEL_NAME}}
 on:
   workflow_call:
@@ -19,14 +19,14 @@ on:
         required: true
         type: string
         description: Kernel Branch
+      KLEAF_BRANCH:
+        required: true
+        type: string
+        description: Kleaf Branch
       VERSION:
         required: true
         type: string
         description: Version
-      COMPILER_VER:
-        required: true
-        type: string
-        description: Compiler Version
       BUILD_TYPE:
         required: true
         type: string
@@ -34,19 +34,6 @@ on:
         description: Build Type
       DEBUG:
         required: false
-        default: false
-        type: boolean
-      FullLTO:
-        required: true
-        default: false
-        type: boolean
-      CCACHE_TYPE:
-        required: true
-        type: string
-        default: ccache
-        description: ccache Type
-      UPDATE_CCACHE:
-        required: true
         default: false
         type: boolean
       UPLOAD_PACKAGE:
@@ -59,9 +46,6 @@ jobs:
     runs-on: ubuntu-latest
     if: ${{inputs.NOSKIP}}
     env:
-      CCACHE_COMPILERCHECK: "%compiler% -dumpmachine; %compiler% -dumpversion"
-      CCACHE_NOHASHDIR: "true"
-      CCACHE_HARDLINK: "true"
       DEBIAN_FRONTEND: "noninteractive"
     steps:
       - name: Clean Build Space
@@ -79,14 +63,11 @@ jobs:
         run: |
           sudo -E apt-get update
           sudo -E apt-get install --no-install-recommends -y \
-            lsb-release linux-modules-extra-"$(uname -r)" ccache sccache pahole \
-            git automake flex bison build-essential zlib1g-dev make rustup \
-            libelf-dev libssl-dev openssl bc device-tree-compiler gzip libdw-dev \
-            python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz \
-            libncurses-dev asciidoc dos2unix lz4 fakeroot python3 python3-pip \
-            gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf \
-            libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross \
-            python3-python-socks python3-async-timeout
+            lsb-release linux-modules-extra-"$(uname -r)" \
+            git repo rsync zip gnupg curl unzip zstd pigz \
+            python3 python3-pip python3-telethon python-is-python3 \
+            python3-python-socks python3-async-timeout dos2unix
+
           sudo -E apt-get clean
           df -h
       - name: Optimize Memory Management
@@ -110,60 +91,32 @@ jobs:
         run: |
           sudo -E rm -rf /etc/localtime
           sudo -E ln -s /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
+      - name: Setup Repo
+        run: |
+          export REPO=$(mktemp /tmp/repo.XXXXXXXXX)
+          curl -o ${REPO} https://storage.googleapis.com/git-repo-downloads/repo
+          gpg --recv-keys 8BB9AD793E8E6153AF0F9A4416530D5E920F5C65
+          curl -s https://storage.googleapis.com/git-repo-downloads/repo.asc | gpg --verify - ${REPO} && sudo -E install -m 755 ${REPO} /usr/bin/repo
       - name: Checkout Code
         uses: actions/checkout@main
         with:
           ref: ${{github.ref_name}}
           fetch-depth: 1
+      - name: Setup Kleaf
+        run: |
+          mkdir $GITHUB_WORKSPACE/ack
+          cd $GITHUB_WORKSPACE/ack
+          repo init -u https://android.googlesource.com/kernel/manifest -b "${{inputs.KLEAF_BRANCH}}"
+          repo sync --jobs=$(nproc --all) --optimized-fetch --current-branch --no-tags
+          cd $GITHUB_WORKSPACE
       - name: Checkout Kernel Code
         uses: actions/checkout@main
         with:
           token: ${{ secrets.CI_TOKEN }}
           repository: ${{inputs.KERNEL_REPO}}
           ref: ${{inputs.KERNEL_BRANCH}}
-          path: kernel_common
+          path: ${{github.workspace}}/ack/pandora
           fetch-depth: 1
-      - name: Download Pandora Clang
-        uses: robinraju/release-downloader@main
-        with:
-          repository: PandoraMTK/pandora-clang
-          tag: ${{inputs.COMPILER_VER}}
-          fileName: pandora-clang.tar.gz
-          extract: true
-          tarBall: false
-          zipBall: false
-          token: ${{ secrets.CI_TOKEN }}
-      - name: Download Pahole
-        uses: robinraju/release-downloader@main
-        with:
-          repository: PandoraMTK/pandora-clang
-          tag: pahole-1.31
-          fileName: pahole
-          extract: false
-          tarBall: false
-          zipBall: false
-          token: ${{ secrets.CI_TOKEN }}
-      - name: Setup ccache options
-        id: setup_ccache_key
-        run: |
-          FULLLTO=""
-          if [ "${{inputs.FullLTO}}" == true ]; then
-            FULLLTO="-full_lto"
-          fi
-
-          CCACHE_KEY="gki$FULLLTO-${{inputs.KERNEL_BRANCH}}-clang_${{inputs.COMPILER_VER}}-build"
-
-          echo "ccache_key_id=$CCACHE_KEY" >> $GITHUB_OUTPUT
-      - name: Setup ccache
-        uses: hendrikmuhs/ccache-action@main
-        with:
-          key: ${{steps.setup_ccache_key.outputs.ccache_key_id}}
-          max-size: 3G
-          save: ${{inputs.UPDATE_CCACHE}}
-          restore: ${{inputs.UPDATE_CCACHE  == false}}
-          append-timestamp: true
-          variant: ${{inputs.CCACHE_TYPE}}
-          evict-old-files: job
       - name: Setup upterm session
         uses: lhotari/action-upterm@v1
         if: ${{inputs.DEBUG}}
@@ -175,15 +128,12 @@ jobs:
         run: |
           set -euo pipefail
 
-          mv $GITHUB_WORKSPACE/pahole $GITHUB_WORKSPACE/pandora-clang/bin/pahole
-          chmod +x $GITHUB_WORKSPACE/pandora-clang/bin/pahole
-          cd kernel_common
-          bash $GITHUB_WORKSPACE/build_kernel.sh \
-            "$GITHUB_WORKSPACE/pandora-clang" "${{inputs.KERNEL_NAME}}" "${{inputs.VERSION}}" \
-            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}" "${{inputs.CCACHE_TYPE}}"
+          cd $GITHUB_WORKSPACE/ack
+          bash $GITHUB_WORKSPACE/build_kernel_kleaf.sh \
+            "${{inputs.KERNEL_NAME}}" "${{inputs.VERSION}}" \
+            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}"
 
-          ZIPNAME="$(cat .output)"
-          mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"
+          ZIPNAME="$(cat $GITHUB_WORKSPACE/.output)"
           echo "archivename=$ZIPNAME" >>$GITHUB_OUTPUT
       - name: Upload to telegram
         if: ${{inputs.UPLOAD_PACKAGE == true}}
