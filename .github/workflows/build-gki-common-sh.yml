@@ -67,7 +67,6 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@main
         with:
-          ref: ${{github.ref_name}}
           fetch-depth: 1
       - name: Checkout Kernel Code
         uses: actions/checkout@main

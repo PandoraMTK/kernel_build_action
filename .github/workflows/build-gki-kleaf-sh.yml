@@ -57,14 +57,11 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@main
         with:
-          ref: ${{github.ref_name}}
           fetch-depth: 1
       - name: Setup Kleaf
         run: |
-          mkdir $GITHUB_WORKSPACE/ack
-          cd $GITHUB_WORKSPACE/ack
-          repo init -u https://mirrors.tuna.tsinghua.edu.cn/git/AOSP/kernel/manifest -b "${{inputs.KLEAF_BRANCH}}"
-          repo sync --no-interleaved --jobs-network=4 --jobs-checkout=$(nproc --all) --optimized-fetch --current-branch --no-tags
+          mkdir $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_upper $GITHUB_WORKSPACE/ack_work
+          sudo mount -t overlay -o "lowerdir=$HOME/ack/${{inputs.KLEAF_BRANCH}},upperdir=$(realpath $GITHUB_WORKSPACE/ack_upper),workdir=$(realpath $GITHUB_WORKSPACE/ack_work)" overlay $(realpath $GITHUB_WORKSPACE/ack)
           cd $GITHUB_WORKSPACE
       - name: Checkout Kernel Code
         uses: actions/checkout@main
@@ -93,3 +90,11 @@ jobs:
           BOT_TOKEN: ${{ secrets.BOT_TOKEN }}
         run: |
           python3 $GITHUB_WORKSPACE/tgbot.py $GITHUB_WORKSPACE/${{ steps.kbuild.outputs.archivename }}.zip
+      - name: Cleanup
+        if: always()
+        run: |
+          cd $GITHUB_WORKSPACE/ack || return 0
+          tools/bazel shutdown
+          cd $GITHUB_WORKSPACE
+          sudo umount $GITHUB_WORKSPACE/ack || true
+          sudo rm -rf $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_work $GITHUB_WORKSPACE/ack_upper
