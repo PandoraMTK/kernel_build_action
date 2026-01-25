@@ -48,17 +48,6 @@ jobs:
     env:
       DEBIAN_FRONTEND: "noninteractive"
     steps:
-      - name: Clean Build Space
-        uses: easimon/maximize-build-space@master
-        with:
-          root-reserve-mb: 8192
-          temp-reserve-mb: 8192
-          swap-size-mb: 32768
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-          remove-docker-images: true
       - name: Install Toolchain
         run: |
           sudo -E apt-get update
@@ -67,9 +56,17 @@ jobs:
             git repo rsync zip gnupg curl unzip zstd pigz \
             python3 python3-pip python3-telethon python-is-python3 \
             python3-python-socks python3-async-timeout dos2unix
-
           sudo -E apt-get clean
-          df -h
+      - name: Clean Build Space
+        uses: hamjin/maximize-build-space@master
+        with:
+          root-reserve-mb: 1024
+          swap-size-mb: 32768
+          remove-dotnet: true
+          remove-android: true
+          remove-haskell: true
+          remove-codeql: true
+          remove-docker-images: true
       - name: Optimize Memory Management
         run: |
           sudo -E sysctl vm.swappiness=200
