@@ -60,8 +60,16 @@ jobs:
           fetch-depth: 1
       - name: Setup Kleaf
         run: |
-          mkdir $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_upper $GITHUB_WORKSPACE/ack_work
-          sudo mount -t overlay -o "lowerdir=$HOME/ack/${{inputs.KLEAF_BRANCH}},upperdir=$(realpath $GITHUB_WORKSPACE/ack_upper),workdir=$(realpath $GITHUB_WORKSPACE/ack_work)" overlay $(realpath $GITHUB_WORKSPACE/ack)
+          if [ -d $HOME/ack ]; then
+            mkdir $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_upper $GITHUB_WORKSPACE/ack_work
+            sudo mount -t overlay -o "lowerdir=$HOME/ack/${{inputs.KLEAF_BRANCH}},upperdir=$(realpath $GITHUB_WORKSPACE/ack_upper),workdir=$(realpath $GITHUB_WORKSPACE/ack_work)" overlay $(realpath $GITHUB_WORKSPACE/ack)
+          else
+            echo "WSL 1, no overlay, doing normal repo sync"
+            mkdir $GITHUB_WORKSPACE/ack
+            cd $GITHUB_WORKSPACE/ack
+            repo init --depth=1 -u https://mirrors.tuna.tsinghua.edu.cn/git/AOSP/kernel/manifest -b "${{inputs.KLEAF_BRANCH}}"
+            repo sync --jobs=4 --optimized-fetch --current-branch --no-tags
+          fi
           cd $GITHUB_WORKSPACE
       - name: Checkout Kernel Code
         uses: actions/checkout@main
@@ -96,5 +104,9 @@ jobs:
           cd $GITHUB_WORKSPACE/ack || return 0
           tools/bazel shutdown
           cd $GITHUB_WORKSPACE
-          sudo umount $GITHUB_WORKSPACE/ack || true
-          sudo rm -rf $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_work $GITHUB_WORKSPACE/ack_upper
+          if [ -d $HOME/ack ]; then
+            sudo umount $GITHUB_WORKSPACE/ack || true
+            sudo rm -rf $GITHUB_WORKSPACE/ack $GITHUB_WORKSPACE/ack_work $GITHUB_WORKSPACE/ack_upper
+          else
+            echo "No overlay to unmount"
+          fi

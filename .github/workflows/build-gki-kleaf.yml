@@ -102,8 +102,8 @@ jobs:
         run: |
           mkdir $GITHUB_WORKSPACE/ack
           cd $GITHUB_WORKSPACE/ack
-          repo init -u https://android.googlesource.com/kernel/manifest -b "${{inputs.KLEAF_BRANCH}}"
-          repo sync --jobs=$(nproc --all) --optimized-fetch --current-branch --no-tags
+          repo init --depth=1 -u https://android.googlesource.com/kernel/manifest -b "${{inputs.KLEAF_BRANCH}}"
+          repo sync --jobs=4 --optimized-fetch --current-branch --no-tags
           cd $GITHUB_WORKSPACE
       - name: Checkout Kernel Code
         uses: actions/checkout@main
