@@ -27,6 +27,11 @@ on:
         required: true
         type: string
         description: Compiler Version
+      PAHOLE_VER:
+        required: false
+        default: "1.31"
+        type: string
+        description: Compiler Version
       BUILD_TYPE:
         required: true
         type: string
@@ -77,16 +82,16 @@ jobs:
             libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross \
             python3-python-socks python3-async-timeout
           sudo -E apt-get clean
-      - name: Clean Build Space
-        uses: hamjin/maximize-build-space@master
-        with:
-          root-reserve-mb: 1024
-          swap-size-mb: 32768
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-          remove-docker-images: true
+      # - name: Clean Build Space
+      #   uses: hamjin/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 1024
+      #     swap-size-mb: 32768
+      #     remove-dotnet: true
+      #     remove-android: true
+      #     remove-haskell: true
+      #     remove-codeql: true
+      #     remove-docker-images: true
       - name: Optimize Memory Management
         run: |
           sudo -E sysctl vm.swappiness=200
@@ -111,6 +116,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@main
         with:
+          ref: main
           fetch-depth: 1
       - name: Checkout Kernel Code
         uses: actions/checkout@main
@@ -134,7 +140,7 @@ jobs:
         uses: robinraju/release-downloader@main
         with:
           repository: PandoraMTK/pandora-clang
-          tag: pahole-1.31
+          tag: pahole-${{inputs.PAHOLE_VER}}
           fileName: pahole
           extract: false
           tarBall: false
