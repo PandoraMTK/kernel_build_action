@@ -66,7 +66,6 @@ get_number() {
 
 # Exports
 export PATH="$CLANG_PATH/bin:$PATH"
-export RUSTC_WRAPPER="sccache"
 export LIBCLANG_PATH="$CLANG_PATH/lib"
 export CCACHE="$CCACHE_TYPE"
 export CC="$CLANG_PATH/bin/clang"
@@ -85,6 +84,7 @@ MODULE_VER=""
 MODULE_VERCODE=""
 NO_LTO="false"
 DEV="false"
+RUST_SWITCH=""
 
 # Resources
 THREADS="$(nproc --all)"
@@ -159,20 +159,23 @@ get_kernel_version() {
 get_kernel_version
 
 init_rust() {
-    RUST="$(grep_prop "CONFIG_RUST" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG")"
-    [ "$RUST" != "y" ] && return 0
+    RUST_SWITCH="$(grep_prop "CONFIG_RUST" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG")"
+    [ "$RUST_SWITCH" != "y" ] && return 0
     [ ! -f "$KERNEL_DIR/scripts/min-tool-version.sh" ] && return 0
     RUSTC_VER="$(grep_prop "RUSTC_VERSION" "$KERNEL_DIR/build.config.constants")"
     [ "$RUSTC_VER" = "" ] && return 0
+    BINDGEN_VER="$(grep_prop "BINDGEN_VERSION" "$KERNEL_DIR/build.config.constants")"
 
     NO_LTO=true
 
+    pushd "$OUT_DIR" || exit 1
     rustup override set "$RUSTC_VER"
-    rustup component add rust-src
+    popd || exit 1
+    rustup override set "$RUSTC_VER"
+    rustup component add rust-src rustfmt
     # [ -f "$CLANG_PATH/bin/bindgen" ] && return 0
-    cargo install --force --root "$CLANG_PATH" bindgen-cli
+    cargo install --force --root "$CLANG_PATH" --locked --version "$BINDGEN_VER" bindgen-cli
 }
-init_rust
 
 ZIMAGE_DIR="$OUT_DIR/arch/arm64/boot"
 DATE_BEGIN=$(date +"%s")
@@ -194,7 +197,21 @@ if [ -f "$FDO_FILE1" ]; then
     EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=$FDO_FILE1"
 fi
 
+mkdir -p "$OUT_DIR"
+init_rust
+
+if ! command -v $CCACHE >/dev/null 2>&1; then
+    echo "$CCACHE not found!"
+    exit 1
+fi
+
 make CC="$CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
+if [ "$RUST_SWITCH" = "y" ]; then
+    if ! make CC="$CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" KERNELRELEASE="$KERNELRELEASE" rustavailable; then
+		echo "Rust compiler is not available or does not meet the minimum version requirement."
+        exit 1
+	fi
+fi
 if [ -f "$FDO_FILE" ]; then
     echo "-------------------"
     echo "Enabling AutoFDO"

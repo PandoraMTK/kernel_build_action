@@ -27,6 +27,11 @@ on:
         required: true
         type: string
         description: Compiler Version
+      PAHOLE_VER:
+        required: false
+        default: "1.25"
+        type: string
+        description: Compiler Version
       BUILD_TYPE:
         required: true
         type: string
@@ -71,22 +76,22 @@ jobs:
             lsb-release linux-modules-extra-"$(uname -r)" ccache sccache pahole \
             git automake flex bison build-essential zlib1g-dev make rustup \
             libelf-dev libssl-dev openssl bc device-tree-compiler gzip libdw-dev \
-            python3-telethon python-is-python3 zip unzip zstd libzstd-dev pigz \
-            libncurses-dev asciidoc dos2unix lz4 fakeroot python3 python3-pip \
+            python3 python3-pip  python3-telethon python-is-python3 python3-python-socks python3-async-timeout \
+            cpio zip unzip zstd libzstd-dev pigz libncurses-dev asciidoc dos2unix lz4 fakeroot \
             gcc-aarch64-linux-gnu gcc-arm-linux-gnueabi gcc-arm-linux-gnueabihf \
-            libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross \
-            python3-python-socks python3-async-timeout
+            libc6-dev-armel-cross libc6-dev-armhf-cross libc6-dev-arm64-cross
+            
           sudo -E apt-get clean
-      - name: Clean Build Space
-        uses: hamjin/maximize-build-space@master
-        with:
-          root-reserve-mb: 1024
-          swap-size-mb: 32768
-          remove-dotnet: true
-          remove-android: true
-          remove-haskell: true
-          remove-codeql: true
-          remove-docker-images: true
+      # - name: Clean Build Space
+      #   uses: hamjin/maximize-build-space@master
+      #   with:
+      #     root-reserve-mb: 1024
+      #     swap-size-mb: 32768
+      #     remove-dotnet: true
+      #     remove-android: true
+      #     remove-haskell: true
+      #     remove-codeql: true
+      #     remove-docker-images: true
       - name: Optimize Memory Management
         run: |
           sudo -E sysctl vm.swappiness=200
@@ -111,6 +116,7 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@main
         with:
+          ref: main
           fetch-depth: 1
       - name: Checkout Kernel Code
         uses: actions/checkout@main
@@ -134,7 +140,7 @@ jobs:
         uses: robinraju/release-downloader@main
         with:
           repository: PandoraMTK/pandora-clang
-          tag: pahole-1.31
+          tag: pahole-${{inputs.PAHOLE_VER}}
           fileName: pahole
           extract: false
           tarBall: false

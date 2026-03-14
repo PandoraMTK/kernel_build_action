@@ -27,6 +27,11 @@ on:
         required: true
         type: string
         description: Compiler Version
+      PAHOLE_VER:
+        required: false
+        default: "1.31"
+        type: string
+        description: Compiler Version
       BUILD_TYPE:
         required: true
         type: string
@@ -90,7 +95,7 @@ jobs:
         uses: robinraju/release-downloader@main
         with:
           repository: PandoraMTK/pandora-clang
-          tag: pahole-1.31
+          tag: pahole-${{inputs.PAHOLE_VER}}
           fileName: pahole
           extract: false
           tarBall: false
