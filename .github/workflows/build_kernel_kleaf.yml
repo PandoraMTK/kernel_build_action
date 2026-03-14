@@ -41,10 +41,10 @@ jobs:
       fail-fast: false
       matrix: &build_matrix
         include:
-          - KERNEL_NAME: Hanamaki
+          - KERNEL_NAME: OddPods
             IF: ${{inputs.BUILD_A}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
-            KERNEL_BRANCH: android16-6.12
+            KERNEL_BRANCH: android16-6.12-o
             KLEAF_BRANCH: common-android16-6.12-2025-06
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-kleaf.yml@main
     secrets: inherit

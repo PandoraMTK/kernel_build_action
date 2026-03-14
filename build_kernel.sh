@@ -159,20 +159,24 @@ get_kernel_version() {
 get_kernel_version
 
 init_rust() {
-    RUST="$(grep_prop "CONFIG_RUST" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG")"
-    [ "$RUST" != "y" ] && return 0
+    RUST_SWITCH="$(grep_prop "CONFIG_RUST" "$KERNEL_DIR/arch/$ARCH/configs/$DEFCONFIG")"
+    [ "$RUST_SWITCH" != "y" ] && return 0
     [ ! -f "$KERNEL_DIR/scripts/min-tool-version.sh" ] && return 0
     RUSTC_VER="$(grep_prop "RUSTC_VERSION" "$KERNEL_DIR/build.config.constants")"
     [ "$RUSTC_VER" = "" ] && return 0
+    BINDGEN_VER="$(grep_prop "BINDGEN_VERSION" "$KERNEL_DIR/build.config.constants")"
 
     NO_LTO=true
+    CCACHE="sccache"
 
+    pushd "$OUT_DIR" || exit 1
+    rustup override set "$RUSTC_VER"
+    popd || exit 1
     rustup override set "$RUSTC_VER"
     rustup component add rust-src
     # [ -f "$CLANG_PATH/bin/bindgen" ] && return 0
-    cargo install --force --root "$CLANG_PATH" bindgen-cli
+    cargo install --force --root "$CLANG_PATH" --locked --version "$BINDGEN_VER" bindgen-cli
 }
-init_rust
 
 ZIMAGE_DIR="$OUT_DIR/arch/arm64/boot"
 DATE_BEGIN=$(date +"%s")
@@ -194,7 +198,21 @@ if [ -f "$FDO_FILE1" ]; then
     EXTRA_FLAGS="CLANG_AUTOFDO_PROFILE=$FDO_FILE1"
 fi
 
+mkdir -p "$OUT_DIR"
+init_rust
+
+if ! command -v $CCACHE >/dev/null 2>&1; then
+    echo "$CCACHE not found!"
+    exit 1
+fi
+
 make CC="$CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" $DEFCONFIG -j"$THREADS"
+if [ "$RUST" = "y" ]; then
+    if ! make CC="$CC" RUSTC="$RUSTC_WRAPPER rustc" LLVM=1 LLVM_IAS=1 "$FDO_FLAGS" O="$OUT_DIR" KERNELRELEASE="$KERNELRELEASE" rustavailable; then
+		echo "Rust compiler is not available or does not meet the minimum version requirement."
+        exit 1
+	fi
+fi
 if [ -f "$FDO_FILE" ]; then
     echo "-------------------"
     echo "Enabling AutoFDO"
@@ -223,8 +241,8 @@ else
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -d LTO_CLANG_FULL
     "$KERNEL_DIR/scripts/config" --file "$OUT_DIR/.config" -e LTO_CLANG_Thin
 fi
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" -j"$THREADS" Image.gz modules 2>&1
-make CC="$CCACHE $CC" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
+make CC="$CCACHE $CC" RUSTC="$RUSTC_WRAPPER rustc" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" -j"$THREADS" Image.gz modules 2>&1
+make CC="$CCACHE $CC" RUSTC="$RUSTC_WRAPPER rustc" LLVM=1 LLVM_IAS=1 "$EXTRA_FLAGS" O="$OUT_DIR" ARCH=$ARCH KERNELRELEASE="$FULL_VERSION" INSTALL_MOD_PATH="$MOD_DIR" INSTALL_MOD_STRIP=1 -j"$THREADS" modules_install 2>&1
 
 DATE_END="$(date +"%s")"
 DIFF="$((DATE_END - DATE_BEGIN))"

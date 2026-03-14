@@ -67,30 +67,35 @@ jobs:
             KERNEL_BRANCH: android12-5.10
             COMPILER_VER: 18.1.8-20250425
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.31"
           - KERNEL_NAME: Yuni
             IF: ${{inputs.BUILD_A}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15
             COMPILER_VER: 20.1.8-20250822
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.31"
           - KERNEL_NAME: AngelBeats
             IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1
             COMPILER_VER: 20.1.8-20250822
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.31"
           - KERNEL_NAME: Haruhi
             IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
             KERNEL_BRANCH: android15-6.6
             COMPILER_VER: 20.1.8-20250822
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.31"
           - KERNEL_NAME: Hanamaki
             IF: ${{inputs.BUILD_C}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
-            KERNEL_BRANCH: android16-6.12-nobtf
-            COMPILER_VER: 20.1.8-20250822
+            KERNEL_BRANCH: android16-6.12
+            COMPILER_VER: 21.1.8-20251231
             CCACHE_TYPE: sccache
+            PAHOLE_VER: "1.31"
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     if: ${{!inputs.USE_SELFHOST}}
@@ -107,6 +112,8 @@ jobs:
       COMPILER_VER: ${{matrix.COMPILER_VER}}
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+      PAHOLE_VER: ${{matrix.PAHOLE_VER}}
+
   init-build-sh:
     name: Build Kernel on Self Hosted Runner
     strategy:
@@ -128,3 +135,4 @@ jobs:
       COMPILER_VER: ${{matrix.COMPILER_VER}}
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+      PAHOLE_VER: ${{matrix.PAHOLE_VER}}
