@@ -62,24 +62,35 @@ jobs:
             KERNEL_BRANCH: android12-5.10-o
             COMPILER_VER: r416183b
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.25"
           - KERNEL_NAME: OuPi
             IF: ${{inputs.BUILD_A}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_5.15
             KERNEL_BRANCH: android13-5.15-o
             COMPILER_VER: r450784e
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.25"
           - KERNEL_NAME: OngelPeats
             IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.1
             KERNEL_BRANCH: android14-6.1-o
             COMPILER_VER: r484474c
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.25"
           - KERNEL_NAME: HummingBird
             IF: ${{inputs.BUILD_B}}
             KERNEL_REPO: PandoraMTK/android_kernel_gki_6.6
             KERNEL_BRANCH: android15-6.6-o
             COMPILER_VER: r522817
             CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.25"
+          - KERNEL_NAME: OddPods
+            IF: ${{inputs.BUILD_B}}
+            KERNEL_REPO: PandoraMTK/android_kernel_gki_6.12
+            KERNEL_BRANCH: android16-6.12-o
+            COMPILER_VER: r536225
+            CCACHE_TYPE: ccache
+            PAHOLE_VER: "1.25"
     uses: PandoraMTK/kernel_build_action/.github/workflows/build-gki-common.yml@main
     secrets: inherit
     if: ${{!inputs.USE_SELFHOST}}
@@ -96,6 +107,8 @@ jobs:
       COMPILER_VER: ${{matrix.COMPILER_VER}}
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+      PAHOLE_VER: ${{matrix.PAHOLE_VER}}
+      OKI: true
   init-build-sh:
     name: Build Kernel on Self Hosted Runner
     strategy:
@@ -117,3 +130,4 @@ jobs:
       COMPILER_VER: ${{matrix.COMPILER_VER}}
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
+      OKI: true

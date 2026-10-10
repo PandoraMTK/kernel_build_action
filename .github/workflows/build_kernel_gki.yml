@@ -113,6 +113,7 @@ jobs:
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
       PAHOLE_VER: ${{matrix.PAHOLE_VER}}
+      OKI: true
 
   init-build-sh:
     name: Build Kernel on Self Hosted Runner
@@ -136,3 +137,4 @@ jobs:
       CCACHE_TYPE: ${{matrix.CCACHE_TYPE}}
       UPLOAD_PACKAGE: ${{inputs.UPLOAD_PACKAGE}}
       PAHOLE_VER: ${{matrix.PAHOLE_VER}}
+      OKI: false

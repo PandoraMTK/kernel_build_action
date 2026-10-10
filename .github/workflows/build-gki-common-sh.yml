@@ -58,6 +58,10 @@ on:
         required: true
         default: true
         type: boolean
+      OKI:
+        required: true
+        default: false
+        type: boolean
 jobs:
   build-kernel:
     name: Build Kernel ${{inputs.KERNEL_BRANCH}}
@@ -127,12 +131,14 @@ jobs:
         run: |
           set -euo pipefail
 
+          export CCACHE_DISABLE=1
+          export SCCACHE_DISABLE=1
           mv $GITHUB_WORKSPACE/pahole $GITHUB_WORKSPACE/pandora-clang/bin/pahole
           chmod +x $GITHUB_WORKSPACE/pandora-clang/bin/pahole
           cd kernel_common
           bash $GITHUB_WORKSPACE/build_kernel.sh \
             "$GITHUB_WORKSPACE/pandora-clang" "${{inputs.KERNEL_NAME}}" "${{inputs.VERSION}}" \
-            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}" "${{inputs.CCACHE_TYPE}}"
+            "${{inputs.BUILD_TYPE}}" "${{github.run_id}}" "${{inputs.FullLTO}}" "${{inputs.CCACHE_TYPE}}" "${{inputs.OKI}}"
 
           ZIPNAME="$(cat .output)"
           mv -f "$ZIPNAME.zip" "$GITHUB_WORKSPACE/$ZIPNAME.zip"

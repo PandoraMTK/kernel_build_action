@@ -25,6 +25,9 @@ FULL_LTO="$6"
 # CCACHE Type(ccache, sccache)
 CCACHE_TYPE="$7"
 
+# OKI
+OKI="$8"
+
 grep_prop() {
     local REGEX="s/^$1=//p"
     shift
@@ -165,8 +168,9 @@ init_rust() {
     RUSTC_VER="$(grep_prop "RUSTC_VERSION" "$KERNEL_DIR/build.config.constants")"
     [ "$RUSTC_VER" = "" ] && return 0
     BINDGEN_VER="$(grep_prop "BINDGEN_VERSION" "$KERNEL_DIR/build.config.constants")"
+    [ "$BINDGEN_VER" = "" ] && BINDGEN_VER="0.69.5"
 
-    NO_LTO=true
+    NO_LTO="true"
 
     pushd "$OUT_DIR" || exit 1
     rustup override set "$RUSTC_VER"
@@ -255,7 +259,7 @@ echo "-------------------"
 echo "Installing modules"
 echo "-------------------"
 mkdir -p "$MAGISK_MOD_PATH"
-for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p perfmgr; do
+for MOD in zram perfmgr bwmon crypto_zstdn crypto_zstdp crypto_lz4p rust_binder; do
     find "$MOD_DIR" -name "$MOD".ko -exec cp -af {} "$MAGISK_MOD_PATH" \;
 done
 
